@@ -14,7 +14,7 @@ from .model import (
     assign_lane,
     POOL_MAX_CAPACITY,
     get_next_reservation,
-    parse_datetime,
+    refresh_booking_statuses,
 )
 
 
@@ -50,10 +50,17 @@ def index():
 
     raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
     events = sorted(raw_events, key=parse_date)
-
+    
     ratings = load_json('ratings.json')  
-    return render_template('index.html', site=site, hours=hours,
-                           facilities=facilities, classes=classes, events=events, ratings=ratings)
+    prices = load_json('prices.json')
+
+    return render_template('index.html', site=site,
+                                         hours=hours,
+                                         facilities=facilities,
+                                         classes=classes,
+                                         events=events,
+                                         ratings=ratings,
+                                         prices=prices)
 
 
 @main.route('/dashboard')
@@ -61,7 +68,11 @@ def index():
 def user_dashboard():
     site = load_json('site.json')
     user = current_user
-
+    prices = load_json('prices.json')   
+    
+    
+    refresh_booking_statuses()
+    
     # همه رزروهای این کاربر
     user_bookings = get_user_bookings(user.id)
 
@@ -84,6 +95,7 @@ def user_dashboard():
     return render_template(
         "user/dashboard.html",
         site=site,
+        prices=prices, 
         next_reservation=next_reservation,
         upcoming_bookings_count=upcoming_count,
         past_bookings_count=past_count,
@@ -127,78 +139,124 @@ def api_wallet_deposit():
 
 @main.route("/api/bookings/create", methods=["POST"])
 @login_required
-def api_booking_create():
-    
+def api_create_booking():
     data = request.get_json(silent=True) or {}
-    
+
     date = data.get("date")
     time = data.get("time")
-    try:
-        duration = int(data.get("duration", 0))
-    except (TypeError, ValueError):
-        return jsonify({"status": "error", "message": "مدت سانس نامعتبر است."}), 400
-    
-    raw_type = (data.get("type") or "").strip()
-    if raw_type == "رزرو لاین تمرین":
+    duration = data.get("duration")
+    booking_type = (data.get("type") or "").strip()
+
+    # نرمال‌سازی متن نوع رزرو برای لاین تمرین
+    if booking_type == "رزرو لاین تمرین":
         booking_type = "لاین تمرین"
-    else:
-        booking_type = raw_type
 
-    price = 40000  # placeholder
-    
-    # 1) Validate inputs
-    if not date or not time or not booking_type:
-        return jsonify({"status": "error", "message": "اطلاعات کامل نیست."}), 400
-
-    # 2) Prevent booking in the past
-    if is_past_booking(date, time):
-        return jsonify({"status": "error", "message": "نمی‌توانید سانس گذشته را رزرو کنید."}), 400
-
-    # 3) Prevent overlapping user bookings
-    if user_has_overlap(current_user.id, date, time, duration):
-        return jsonify({"status": "error", "message": "شما در این بازه زمانی قبلاً رزرو دارید."}), 409
-
-    # 4) Wallet check
-    if not current_user.charge(price, description=f"رزرو سانس ({booking_type})"):
-        return jsonify({"status": "error", "message": "موجودی کیف پول کافی نیست."}), 402
-
-    
-
-    if booking_type == "شنای آزاد":
-        swimmers = count_pool_swimmers(date, time, duration)
-        if swimmers >= POOL_MAX_CAPACITY:
-            return jsonify({
+    # اعتبارسنجی اولیه
+    if not date or not time or not duration or not booking_type:
+        return jsonify(
+            {
                 "status": "error",
-                "message": "ظرفیت این سانس تکمیل شده است."
-            }), 409
-        lane = None
+                "message": "لطفاً تمام فیلدهای مورد نیاز (تاریخ، ساعت، مدت و نوع رزرو) را پر کنید.",
+            }
+        ), 400
 
+    try:
+        duration = int(duration)
+        if duration <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify(
+            {"status": "error", "message": "مدت سانس نامعتبر است."}
+        ), 400
+
+    # رزرو در گذشته؟
+    if is_past_booking(date, time):
+        return jsonify(
+            {"status": "error", "message": "امکان ثبت رزرو برای زمان گذشته وجود ندارد."}
+        ), 400
+
+    # تداخل با رزروهای قبلی کاربر؟
+    if user_has_overlap(current_user.id, date, time, duration):
+        return jsonify(
+            {
+                "status": "error",
+                "message": "شما در این بازه زمانی رزرو دیگری دارید.",
+            }
+        ), 409
+
+    # بررسی ظرفیت و لاین‌ها قبل از کم کردن از کیف پول
+    lane = None
+
+    # شنای آزاد → محدودیت ظرفیت کلی استخر
+    if booking_type == "شنای آزاد":
+        swimmers_count = count_pool_swimmers(date, time, duration)
+        if swimmers_count >= POOL_MAX_CAPACITY:
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "ظرفیت استخر برای این بازه زمانی تکمیل است.",
+                }
+            ), 409
+
+    # لاین تمرین → اختصاص خودکار لاین
     elif booking_type == "لاین تمرین":
         lane = assign_lane(date, time, duration, booking_type)
         if lane is None:
-            return jsonify({
-                "status": "error",
-                "message": "تمام لاین‌ها در این بازه زمانی رزرو شده‌اند."
-            }), 409
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "تمام لاین‌های تمرینی در این بازه زمانی پر هستند.",
+                }
+            ), 409
 
+    # سایر انواع (اگر بعداً اضافه شوند) فعلاً بدون منطق خاص
+    # قیمت‌گذاری بر اساس فایل data/prices.json
+    try:
+        prices_cfg = load_json("prices.json")
+    except Exception:
+        # اگر فایل خراب یا در دسترس نباشد، از مقادیر پیش‌فرض استفاده می‌کنیم
+        prices_cfg = {}
+
+    default_free_swim = 40000
+    default_lane_training = 80000
+
+    if booking_type == "شنای آزاد":
+        price = int(prices_cfg.get("free_swim", default_free_swim))
+    elif booking_type == "لاین تمرین":
+        price = int(prices_cfg.get("lane_training", default_lane_training))
     else:
-        lane = None  # for future: classes/events
+        # نوع ناشناخته → از شنای آزاد به عنوان پایه استفاده می‌کنیم
+        price = int(prices_cfg.get("free_swim", default_free_swim))
+
+    # کم کردن از کیف پول کاربر
+    description = f"رزرو سانس ({booking_type})"
+    if not current_user.charge(price, description=description):
+        return jsonify(
+            {
+                "status": "error",
+                "message": "موجودی کیف پول برای این رزرو کافی نیست.",
+            }
+        ), 402
+
+    # ایجاد رزرو
     booking = create_booking(
         user_id=current_user.id,
         date=date,
         time=time,
         duration=duration,
         booking_type=booking_type,
-        lane=lane
+        lane=lane,
     )
 
-    return jsonify({
-        "status": "success",
-        "message": "رزرو با موفقیت انجام شد.",
-        "booking_id": booking.id,
-        "new_balance": current_user.wallet_balance,
-        "lane": lane
-    })
+    return jsonify(
+        {
+            "status": "success",
+            "message": "رزرو با موفقیت ثبت شد.",
+            "booking_id": booking.id,
+            "lane": lane,
+            "new_balance": current_user.wallet_balance,
+        }
+    ), 201
 
 
 @main.route("/api/bookings/cancel", methods=["POST"])
@@ -227,6 +285,9 @@ def api_booking_cancel():
 @login_required
 def bookings():
     site = load_json("site.json")
+    prices = load_json("prices.json")  # NEW
+    
+    refresh_booking_statuses()
 
     # همه رزروهای این کاربر
     user_bookings = get_user_bookings(current_user.id)
@@ -251,6 +312,7 @@ def bookings():
 
     return render_template(
         "user/bookings.html",
+        prices=prices,                 
         site=site,
         upcoming_bookings=upcoming,
         past_bookings=past

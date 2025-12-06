@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, List
 import datetime as dt
 
+from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -243,3 +244,17 @@ def count_pool_swimmers(date, time, duration):
             count += 1
 
     return count
+
+
+
+def refresh_booking_statuses():
+    """به‌روزرسانی وضعیت رزروها بر اساس تاریخ/ساعت فعلی.
+
+    - رزروهای active که تاریخ/ساعت‌شان گذشته است → expired
+    - رزروهای cancelled همان‌طور می‌مانند
+    """
+    now = datetime.now()
+    for booking in _BOOKINGS.values():
+        # فقط رزروهای فعال را چک می‌کنیم
+        if booking.status == "active" and is_past_booking(booking.date, booking.time):
+            booking.status = "expired"

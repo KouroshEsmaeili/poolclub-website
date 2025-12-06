@@ -6,8 +6,8 @@
 <div class="topbar d-flex justify-content-between align-items-center">
   <h3 class="m-0">رزروهای من</h3>
   <div class="d-flex gap-2">
-    <a href="{{ url_for('main.index') }}#booking" class="btn btn-primary btn-sm">
-      <i class="fas fa-plus ms-1"></i> رزرو جدید
+    <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingModal">
+      <i class="fas fa-calendar-plus ms-1"></i> رزرو جدید
     </a>
   </div>
 </div>
@@ -60,12 +60,12 @@
                   {% endif %}
                 </td>
                 <td>
-                  {% if b.status == "active" %}
-                    <span class="badge bg-success">فعال</span>
-                  {% elif b.status == "cancelled" %}
+                  {% if b.status == "cancelled" %}
                     <span class="badge bg-secondary">لغوشده</span>
+                  {% elif b.status == "expired" %}
+                    <span class="badge bg-dark">منقضی شده</span>
                   {% else %}
-                    <span class="badge bg-dark">{{ b.status }}</span>
+                    <span class="badge bg-dark">پایان‌یافته</span>
                   {% endif %}
                 </td>
                 <td>
@@ -256,4 +256,5 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+{% include "partials/booking_modal.html" %}
 {% endblock %}

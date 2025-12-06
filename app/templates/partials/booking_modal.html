@@ -1,4 +1,4 @@
-<!-- Booking Modal (Enhanced) -->
+<!-- Booking Modal (استخر / لاین) -->
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content bg-dark text-white rounded-3 shadow-lg">
@@ -10,42 +10,41 @@
 
       <div class="modal-body pt-0">
 
-        <!-- Placeholder for backend response messages -->
+        <!-- پیام‌ها (خطا / موفقیت) -->
         <div id="bookingMessage" class="d-none alert mt-2 mb-4"></div>
 
         <form id="bookingForm">
 
-          <!-- Date & Time Row -->
+          <!-- ردیف تاریخ و ساعت -->
           <div class="row g-3 mb-3">
-
             <div class="col-md-6">
               <label class="form-label fw-semibold">تاریخ رزرو</label>
-              <input 
-                type="date" 
-                class="form-control form-control-lg bg-secondary text-white border-0" 
-                name="date" 
-                required>
+              <input
+                type="date"
+                class="form-control form-control-lg bg-secondary text-white border-0"
+                name="date"
+                required
+              >
             </div>
-
             <div class="col-md-6">
               <label class="form-label fw-semibold">ساعت شروع</label>
-              <input 
-                type="time" 
-                class="form-control form-control-lg bg-secondary text-white border-0" 
-                name="time" 
-                required>
+              <input
+                type="time"
+                class="form-control form-control-lg bg-secondary text-white border-0"
+                name="time"
+                required
+              >
             </div>
-
           </div>
 
-          <!-- Duration & Type Row -->
+          <!-- ردیف مدت و نوع -->
           <div class="row g-3 mb-4">
-
             <div class="col-md-6">
               <label class="form-label fw-semibold">مدت سانس</label>
-              <select 
-                class="form-select form-select-lg bg-secondary text-white border-0" 
-                name="duration">
+              <select
+                class="form-select form-select-lg bg-secondary text-white border-0"
+                name="duration"
+              >
                 <option value="60">۶۰ دقیقه</option>
                 <option value="90">۹۰ دقیقه</option>
                 <option value="120">۱۲۰ دقیقه</option>
@@ -54,33 +53,33 @@
 
             <div class="col-md-6">
               <label class="form-label fw-semibold">نوع رزرو</label>
-              <select 
-                class="form-select form-select-lg bg-secondary text-white border-0" 
-                name="type">
-                <option value="شنای آزاد">شنای آزاد</option>
+              <select
+                class="form-select form-select-lg bg-secondary text-white border-0"
+                name="type"
+              >
+                <option value="شنای آزاد">شنای آزاد (استخر عمومی)</option>
                 <option value="رزرو لاین تمرین">لاین تمرین (تمرینی)</option>
-                <option value="کلاس گروهی">کلاس گروهی</option>
               </select>
             </div>
-
           </div>
 
-          <!-- Price Box -->
+          <!-- نمایش قیمت -->
           <div class="bg-secondary text-white rounded-3 p-3 mb-4">
             <div class="d-flex justify-content-between align-items-center">
               <span class="fw-semibold">هزینه سانس (تقریبی):</span>
               <span id="bookingPricePreview" class="fw-bold">–</span>
             </div>
             <small class="text-light opacity-75">
-              مبلغ دقیق پس از بررسی ظرفیت و قوانین رزرو محاسبه می‌شود.
+              مبلغ نهایی پس از بررسی ظرفیت و قوانین رزرو از کیف پول شما کسر می‌شود.
             </small>
           </div>
 
-          <!-- Submit -->
-          <button 
-            class="btn btn-primary btn-lg w-100 fw-bold py-2" 
-            type="submit">
-            بررسی ظرفیت و ادامه
+          <!-- دکمه ثبت -->
+          <button
+            class="btn btn-primary btn-lg w-100 fw-bold py-2"
+            type="submit"
+          >
+            بررسی ظرفیت و ثبت رزرو
           </button>
 
         </form>

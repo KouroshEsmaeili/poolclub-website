@@ -1,80 +1,218 @@
-// رزرو سانس - فرم مودال
-document.getElementById('bookingForm')?.addEventListener('submit', function (e) {
-  e.preventDefault();
-  const f = new FormData(this);
-  alert(
-    `درخواست رزرو:\n` +
-    `${f.get('date')}  ${f.get('time')} · ${f.get('duration')} دقیقه · ${f.get('type')}\n\n` +
-    `(گام بعدی: اتصال به /api/availability با داده ماک JSON)`
-  );
-});
+/* =========================
+ *  Booking Modal Logic (استخر / لاین)
+ * ========================= */
 
-// کلاس‌ها – باز کردن مودال با کلیک روی کارت
-document.querySelectorAll('.class-card').forEach(function (card) {
-  card.addEventListener('click', function () {
-    const name = this.dataset.name;
-    const coach = this.dataset.coach;
-    const time = this.dataset.time;
-    const capacity = this.dataset.capacity;
-    const price = this.dataset.price;
-    const description = this.dataset.description;
+document.addEventListener("DOMContentLoaded", function () {
+  // عناصر مودال رزرو
+  const bookingForm = document.getElementById("bookingForm");
+  const bookingMessage = document.getElementById("bookingMessage");
+  const bookingPricePreview = document.getElementById("bookingPricePreview");
+  const bookingModal = document.getElementById("bookingModal");
+  
+  
+  const PRICES = window.BOOKING_PRICES
+      ? {
+          "شنای آزاد": window.BOOKING_PRICES.free_swim || 0,
+          "رزرو لاین تمرین": window.BOOKING_PRICES.lane_training || 0,
+        }
+      : {
+          // fallback if backend variable is missing
+          "شنای آزاد": 40000,
+          "رزرو لاین تمرین": 80000,
+        };
+    
+    function showMessage(type, text) {
+    if (!bookingMessage) return;
+    bookingMessage.classList.remove("d-none");
+    bookingMessage.classList.remove("alert-success", "alert-danger", "alert-warning");
+    bookingMessage.classList.add(`alert-${type}`);
+    bookingMessage.textContent = text;
+  }
 
-    // پر کردن محتوای مودال
-    document.getElementById('classModalTitle').textContent = name;
-    document.getElementById('classModalCoach').textContent = coach;
-    document.getElementById('classModalTime').textContent = time;
-    document.getElementById('classModalCapacity').textContent = capacity;
-    document.getElementById('classModalPrice').textContent = price;
-    document.getElementById('classModalDescription').textContent = description;
+  function clearMessage() {
+    if (!bookingMessage) return;
+    bookingMessage.classList.add("d-none");
+  }
 
-    const modalEl = document.getElementById('classDetailModal');
-    if (modalEl) {
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modal.show();
+  function updatePrice() {
+    if (!bookingForm || !bookingPricePreview) return;
+
+    const type = bookingForm.type ? bookingForm.type.value.trim() : "";
+    const basePrice = PRICES[type] || 0;
+
+    const duration = bookingForm.duration
+      ? parseInt(bookingForm.duration.value, 10)
+      : 60;
+
+    const multiplier = duration / 60; // 60, 90, 120 → 1, 1.5, 2
+    const finalPrice = Math.round(basePrice * multiplier);
+
+    bookingPricePreview.textContent = finalPrice
+      ? finalPrice.toLocaleString("fa-IR") + " تومان"
+      : "–";
+  }
+
+  // اگر فرم وجود دارد، لیسنرها را وصل کن
+  if (bookingForm) {
+    if (bookingForm.type) {
+      bookingForm.type.addEventListener("change", updatePrice);
     }
-  });
+    if (bookingForm.duration) {
+      bookingForm.duration.addEventListener("change", updatePrice);
+    }
+    updatePrice();
 
-  // Optional: keyboard access (Enter key)
-  card.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' || e.key === ' ') {
+    // هندلر ارسال فرم → /api/bookings/create
+    bookingForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      this.click();
-    }
-  });
-});
+      clearMessage();
 
-// رفتار ابتدایی برای دکمه‌ی ثبت‌نام
-const signupBtn = document.getElementById('classModalSignupButton');
-if (signupBtn) {
-  signupBtn.addEventListener('click', function () {
-    const title = document.getElementById('classModalTitle').textContent || '';
-    alert(
-      `در نسخه بعدی، این دکمه شما را به صفحه ثبت‌نام برای کلاس:\n«${title}»\nمی‌بَرَد.`
-    );
+      const formData = new FormData(bookingForm);
+      const date = formData.get("date");
+      const time = formData.get("time");
+      const duration = parseInt(formData.get("duration"), 10);
+      const type = formData.get("type");
+
+      if (!date || !time) {
+        showMessage("warning", "لطفاً تاریخ و ساعت را وارد کنید.");
+        return;
+      }
+
+      const submitBtn = bookingForm.querySelector("button[type='submit']");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "در حال بررسی...";
+      }
+
+      fetch("/api/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date,
+          time,
+          duration,
+          type
+        })
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "بررسی ظرفیت و ثبت رزرو";
+          }
+
+          if (data.status === "error") {
+            showMessage("danger", data.message || "خطایی رخ داد.");
+            return;
+          }
+
+          if (data.status === "success") {
+            showMessage("success", "رزرو با موفقیت ثبت شد!");
+
+            setTimeout(() => {
+              if (bookingModal && typeof bootstrap !== "undefined") {
+                let modalInstance = bootstrap.Modal.getInstance(bookingModal);
+                if (!modalInstance) {
+                  modalInstance = bootstrap.Modal.getOrCreateInstance(bookingModal);
+                }
+                modalInstance.hide();
+              }
+              window.location.href = "/dashboard/bookings";
+            }, 1100);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          showMessage("danger", "خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.");
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "بررسی ظرفیت و ثبت رزرو";
+          }
+        });
+    });
+  }
+
+  /* =========================
+   *  کلاس‌ها – باز کردن مودال با کلیک روی کارت
+   *  (برنامه‌ها/کلاس‌ها در روت جداگانه هندل می‌شوند، این فقط نمایش است)
+   * ========================= */
+
+  document.querySelectorAll(".class-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      const name = this.dataset.name;
+      const coach = this.dataset.coach;
+      const time = this.dataset.time;
+      const capacity = this.dataset.capacity;
+      const price = this.dataset.price;
+      const description = this.dataset.description;
+
+      const titleEl = document.getElementById("classModalTitle");
+      const coachEl = document.getElementById("classModalCoach");
+      const timeEl = document.getElementById("classModalTime");
+      const capacityEl = document.getElementById("classModalCapacity");
+      const priceEl = document.getElementById("classModalPrice");
+      const descriptionEl = document.getElementById("classModalDescription");
+
+      if (titleEl) titleEl.textContent = name || "";
+      if (coachEl) coachEl.textContent = coach || "";
+      if (timeEl) timeEl.textContent = time || "";
+      if (capacityEl) capacityEl.textContent = capacity || "";
+      if (priceEl) priceEl.textContent = price || "";
+      if (descriptionEl) descriptionEl.textContent = description || "";
+
+      const modalEl = document.getElementById("classDetailModal");
+      if (modalEl && typeof bootstrap !== "undefined") {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      }
+    });
+
+    // دسترسی با کیبورد
+    card.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        this.click();
+      }
+    });
   });
-}
+
+  // دکمه ثبت‌نام کلاس – فعلاً فقط پیام نمایشی
+  const signupBtn = document.getElementById("classModalSignupButton");
+  if (signupBtn) {
+    signupBtn.addEventListener("click", function () {
+      const title =
+        (document.getElementById("classModalTitle")?.textContent || "").trim();
+      alert(
+        `در نسخه‌های بعدی، این دکمه شما را به روت مخصوص برنامه‌ها/کلاس‌ها برای کلاس:\n«${title}»\nمنتقل می‌کند.`
+      );
+    });
+  }
+
+  // وضعیت اولیه ناوبار
+  handleNavbarShrink();
+  updateNavLinkColors();
+});
 
 /* =========================
  *  Navbar background logic
  * ========================= */
 
-// تابع: کوچک کردن / پس‌زمینه‌دار کردن نوار بالا بعد از اسکرول
+// کوچک کردن / پس‌زمینه‌دار کردن نوار بالا بعد از اسکرول
 function handleNavbarShrink() {
-  const navbar = document.getElementById('mainNav');
+  const navbar = document.getElementById("mainNav");
   if (!navbar) return;
 
-  const SHRINK_OFFSET = 40; // چند پیکسل بعد از بالای صفحه
+  const SHRINK_OFFSET = 40;
 
   if (window.scrollY > SHRINK_OFFSET) {
-    navbar.classList.add('navbar-shrink');
+    navbar.classList.add("navbar-shrink");
   } else {
-    navbar.classList.remove('navbar-shrink');
+    navbar.classList.remove("navbar-shrink");
   }
 }
 
 // پیدا کردن رنگ پس‌زمینه‌ی موثر
 function getEffectiveBgColor(el) {
-  // Walk up the DOM until we find a non-transparent background
   while (el && el !== document.documentElement) {
     const color = window.getComputedStyle(el).backgroundColor;
     if (color && color !== "rgba(0, 0, 0, 0)" && color !== "transparent") {
@@ -82,22 +220,18 @@ function getEffectiveBgColor(el) {
     }
     el = el.parentElement;
   }
-  // fallback: body background
   return window.getComputedStyle(document.body).backgroundColor;
 }
 
 // تشخیص روشن/تیره بودن رنگ
 function isLightColor(color) {
-  // Expect formats like rgb(r,g,b) or rgba(r,g,b,a)
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
   if (!m) {
-    // If we can’t parse, assume light to avoid invisible text
     return true;
   }
   const r = parseInt(m[1], 10);
   const g = parseInt(m[2], 10);
   const b = parseInt(m[3], 10);
-  // perceived brightness formula
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   return brightness > 128;
 }
@@ -110,22 +244,21 @@ function updateNavLinkColors() {
   const bg = getEffectiveBgColor(nav);
   const isLight = isLightColor(bg);
 
-  nav.querySelectorAll(".nav-link").forEach(link => {
-    link.classList.toggle("nav-link-light", !isLight); // dark bg → light text
-    link.classList.toggle("nav-link-dark", isLight);   // light bg → dark text
+  nav.querySelectorAll(".nav-link").forEach((link) => {
+    link.classList.toggle("nav-link-light", !isLight); // پس‌زمینه تیره → متن روشن
+    link.classList.toggle("nav-link-dark", isLight);   // پس‌زمینه روشن → متن تیره
   });
 }
 
-// راه‌اندازی رویدادها
-document.addEventListener("DOMContentLoaded", function () {
-  handleNavbarShrink();      // وضعیت اولیه (اگر کاربر وسط صفحه رفرش کند)
-  updateNavLinkColors();
-});
-
-window.addEventListener("scroll", function () {
-  handleNavbarShrink();
-  updateNavLinkColors();
-}, { passive: true });
+// رویدادهای اسکرول و تغییر اندازه
+window.addEventListener(
+  "scroll",
+  function () {
+    handleNavbarShrink();
+    updateNavLinkColors();
+  },
+  { passive: true }
+);
 
 window.addEventListener("resize", function () {
   handleNavbarShrink();
