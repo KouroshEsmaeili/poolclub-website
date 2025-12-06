@@ -1,0 +1,62 @@
+{% extends "auth_base.html" %}
+{% block title %}ورود | {{ site.brand }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5 col-md-7">
+    <div class="card shadow-lg border-0 bg-white auth-card">
+      <div class="card-body">
+
+        <h4 class="mb-2 text-center">ورود به حساب کاربری</h4>
+        <p class="auth-subtitle text-center mb-4">
+          برای مشاهده داشبورد، رزروها و اشتراک‌ها وارد شوید.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages if category != 'success' %}
+              <div class="alert alert-{{ category }} mb-2" role="alert">
+                {{ msg }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+
+        <form method="post" novalidate>
+          <div class="mb-3">
+            <label class="form-label">ایمیل</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+              <input type="email" class="form-control" name="email" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">رمز عبور</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              <input type="password" class="form-control" name="password" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 mt-2">
+            ورود
+          </button>
+        </form>
+
+        <hr class="my-4">
+
+        <p class="text-center mb-1">
+          حساب ندارید؟
+          <a href="{{ url_for('auth.register') }}">ثبت‌نام کنید</a>.
+        </p>
+        <p class="text-center text-muted small mb-0">
+          یا بدون ثبت‌نام از طریق دکمه «رزرو سانس» در بالا فقط سانس مهمان رزرو کنید.
+        </p>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

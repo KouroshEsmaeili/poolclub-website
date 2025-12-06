@@ -1,0 +1,78 @@
+{% extends "auth_base.html" %}
+{% block title %}ثبت‌نام | {{ site.brand }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5 col-md-7">
+    <div class="card shadow-lg border-0 bg-white auth-card">
+      <div class="card-body">
+
+        <h4 class="mb-2 text-center">ساخت حساب جدید</h4>
+        <p class="auth-subtitle text-center mb-4">
+          با ساخت حساب می‌توانید اشتراک بگیرید، سانس رزرو کنید و کلاس‌های خود را مدیریت کنید.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages if category != 'success' %}
+              <div class="alert alert-{{ category }} mb-2" role="alert">
+                {{ msg }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+
+        <form method="post" novalidate>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">نام</label>
+              <input type="text" class="form-control" name="first_name">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">نام خانوادگی</label>
+              <input type="text" class="form-control" name="last_name">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">ایمیل</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+              <input type="email" class="form-control" name="email" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">رمز عبور</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              <input type="password" class="form-control" name="password" required>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">تکرار رمز عبور</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              <input type="password" class="form-control" name="password2" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            ثبت‌نام
+          </button>
+        </form>
+
+        <hr class="my-4">
+
+        <p class="text-center mb-0">
+          قبلاً حساب ساخته‌اید؟
+          <a href="{{ url_for('auth.login') }}">وارد شوید</a>.
+        </p>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
