@@ -433,45 +433,6 @@
   </div>
 </section>
 
-<!-- Modal: رزرو سانس/لاین (فعلاً استاتیک) -->
-<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title" id="bookingModalLabel">رزرو سانس/لاین</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
-      </div>
-      <div class="modal-body">
-        <form id="bookingForm">
-          <div class="mb-3">
-            <label class="form-label">تاریخ</label>
-            <input type="date" class="form-control" name="date" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">ساعت شروع</label>
-            <input type="time" class="form-control" name="time" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">مدت</label>
-            <select class="form-select" name="duration">
-              <option value="60">۶۰ دقیقه</option>
-              <option value="90">۹۰ دقیقه</option>
-              <option value="120">۱۲۰ دقیقه</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">نوع رزرو</label>
-            <select class="form-select" name="type">
-              <option>شنای آزاد</option>
-              <option>رزرو لاین تمرین</option>
-              <option>کلاس گروهی</option>
-            </select>
-          </div>
-          <button class="btn btn-primary w-100" type="submit">بررسی ظرفیت</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 
+{% include "partials/booking_modal.html" %}
 {% endblock %}

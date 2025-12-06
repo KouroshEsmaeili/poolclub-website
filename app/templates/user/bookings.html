@@ -1,0 +1,259 @@
+{% extends "dashboard_base.html" %}
+{% block title %}رزروهای من | {{ site.brand }}{% endblock %}
+
+{% block content %}
+
+<div class="topbar d-flex justify-content-between align-items-center">
+  <h3 class="m-0">رزروهای من</h3>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.index') }}#booking" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus ms-1"></i> رزرو جدید
+    </a>
+  </div>
+</div>
+
+<div class="container-fluid">
+
+  {# --- Upcoming bookings --- #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+          <i class="fas fa-calendar-day ms-1 text-success"></i>
+          رزروهای فعال و آینده
+        </h5>
+        {% if upcoming_bookings %}
+          <span class="badge bg-success-subtle text-success border">
+            {{ upcoming_bookings|length }} رزرو فعال
+          </span>
+        {% endif %}
+      </div>
+
+      {% if upcoming_bookings %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle text-center">
+            <thead>
+              <tr>
+                <th>شناسه</th>
+                <th>تاریخ</th>
+                <th>ساعت</th>
+                <th>مدت (دقیقه)</th>
+                <th>نوع</th>
+                <th>لاین</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in upcoming_bookings %}
+              <tr>
+                <td>{{ b.id }}</td>
+                <td>{{ b.date }}</td>
+                <td>{{ b.time }}</td>
+                <td>{{ b.duration }}</td>
+                <td>{{ b.type }}</td>
+                <td>
+                  {% if b.lane %}
+                    لاین {{ b.lane }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% if b.status == "active" %}
+                    <span class="badge bg-success">فعال</span>
+                  {% elif b.status == "cancelled" %}
+                    <span class="badge bg-secondary">لغوشده</span>
+                  {% else %}
+                    <span class="badge bg-dark">{{ b.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if b.status == "active" %}
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#cancelBookingModal"
+                      data-booking-id="{{ b.id }}"
+                      data-booking-date="{{ b.date }}"
+                      data-booking-time="{{ b.time }}"
+                      data-booking-type="{{ b.type }}"
+                      data-booking-lane="{{ b.lane or '' }}"
+                    >
+                      لغو
+                    </button>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-4">
+          <p class="mb-1">در حال حاضر رزرو فعالی ندارید.</p>
+          <p class="mb-0">
+            برای رزرو سانس جدید، روی دکمه
+            <strong>«رزرو جدید»</strong> در بالا کلیک کنید.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# --- Past bookings --- #}
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">
+          <i class="fas fa-history ms-1 text-secondary"></i>
+          آرشیو رزروهای گذشته
+        </h5>
+        {% if past_bookings %}
+          <span class="badge bg-light text-muted border">
+            {{ past_bookings|length }} رزرو گذشته
+          </span>
+        {% endif %}
+      </div>
+
+      {% if past_bookings %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle text-center">
+            <thead class="table-light">
+              <tr>
+                <th>شناسه</th>
+                <th>تاریخ</th>
+                <th>ساعت</th>
+                <th>مدت</th>
+                <th>نوع</th>
+                <th>لاین</th>
+                <th>وضعیت</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in past_bookings %}
+              <tr>
+                <td>{{ b.id }}</td>
+                <td>{{ b.date }}</td>
+                <td>{{ b.time }}</td>
+                <td>{{ b.duration }}</td>
+                <td>{{ b.type }}</td>
+                <td>
+                  {% if b.lane %}
+                    لاین {{ b.lane }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% if b.status == "cancelled" %}
+                    <span class="badge bg-secondary">لغوشده</span>
+                  {% else %}
+                    <span class="badge bg-dark">پایان‌یافته</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-3">
+          هنوز رزوری در گذشته ثبت نشده است.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{# --- Cancel modal --- #}
+<div class="modal fade" id="cancelBookingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">لغو رزرو</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          آیا از لغو رزرو زیر مطمئن هستید؟
+        </p>
+        <ul class="list-unstyled small text-muted mb-0" id="cancelBookingSummary">
+          {# پر می‌شود در جاوااسکریپت #}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+        <button type="button" class="btn btn-danger" id="confirmCancelBtn">
+          بله، لغو کن
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var cancelModal = document.getElementById("cancelBookingModal");
+  var summaryEl = document.getElementById("cancelBookingSummary");
+  var confirmBtn = document.getElementById("confirmCancelBtn");
+  var bookingIdToCancel = null;
+
+  if (!cancelModal) return;
+
+  cancelModal.addEventListener("show.bs.modal", function (event) {
+    var button = event.relatedTarget;
+    if (!button) return;
+
+    var id = button.getAttribute("data-booking-id");
+    var date = button.getAttribute("data-booking-date");
+    var time = button.getAttribute("data-booking-time");
+    var type = button.getAttribute("data-booking-type");
+    var lane = button.getAttribute("data-booking-lane");
+
+    bookingIdToCancel = id;
+
+    var items = [];
+    if (type) items.push("نوع: " + type);
+    if (date) items.push("تاریخ: " + date);
+    if (time) items.push("ساعت: " + time);
+    if (lane) items.push("لاین: " + lane);
+
+    summaryEl.innerHTML = "";
+    items.forEach(function (txt) {
+      var li = document.createElement("li");
+      li.textContent = txt;
+      summaryEl.appendChild(li);
+    });
+  });
+
+  confirmBtn.addEventListener("click", function () {
+    if (!bookingIdToCancel) return;
+
+    fetch("/api/bookings/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ booking_id: bookingIdToCancel })
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.status === "success") {
+        location.reload();
+      } else {
+        alert(data.message || "خطا در لغو رزرو");
+      }
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert("خطا در ارتباط با سرور");
+    });
+  });
+});
+</script>
+{% endblock %}
