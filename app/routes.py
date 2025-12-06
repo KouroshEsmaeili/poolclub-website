@@ -16,6 +16,7 @@ from .model import (
     get_next_reservation,
     refresh_booking_statuses,
 )
+from .swimcloud_scraper import fetch_swimcloud_rankings
 
 
 main = Blueprint('main', __name__)
@@ -54,13 +55,24 @@ def index():
     ratings = load_json('ratings.json')  
     prices = load_json('prices.json')
 
+    try:
+        live_rankings, live_rankings_updated_at = fetch_swimcloud_rankings()
+    except Exception as exc:
+        live_rankings = []
+        live_rankings_updated_at = None
+        print("Error fetching Swimcloud rankings:", exc)
+
     return render_template('index.html', site=site,
                                          hours=hours,
                                          facilities=facilities,
                                          classes=classes,
                                          events=events,
                                          ratings=ratings,
-                                         prices=prices)
+                                         prices=prices,
+                                         live_rankings=live_rankings,
+                                         live_rankings_updated_at=live_rankings_updated_at
+                                         )
+
 
 
 @main.route('/dashboard')
@@ -273,14 +285,6 @@ def api_booking_cancel():
     else:
         return jsonify({"status": "error", "message": "رزرو یافت نشد."}), 404
 
-# Later when we implement /dashboard/bookings, we can fetch:
-# user_bookings = get_user_bookings(current_user.id)
-# And show:
-# Active bookings
-# Cancelled bookings
-# Next booking (soonest upcoming)
-
-
 @main.route("/dashboard/bookings")
 @login_required
 def bookings():
@@ -317,3 +321,23 @@ def bookings():
         upcoming_bookings=upcoming,
         past_bookings=past
     )
+
+
+
+
+
+@main.route("/api/live-rankings")
+def api_live_rankings():
+    try:
+        items, updated_at = fetch_swimcloud_rankings()
+        return jsonify({
+            "status": "success",
+            "updated_at": updated_at,
+            "items": items,
+        })
+    except Exception as exc:
+        print("Error fetching Swimcloud rankings (API):", exc)
+        return jsonify({
+            "status": "error",
+            "message": "خطا در دریافت رده‌بندی زنده.",
+        }), 500

@@ -264,3 +264,45 @@ window.addEventListener("resize", function () {
   handleNavbarShrink();
   updateNavLinkColors();
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const tableBody = document.querySelector("#live-rankings table tbody");
+  const updatedAtEl = document.querySelector("#live-rankings .text-muted.small");
+
+  if (!tableBody) return;
+
+  function renderRankings(items, updatedAt) {
+    tableBody.innerHTML = "";
+    items.slice(0, 10).forEach((item, index) => {
+      const tr = document.createElement("tr");
+      if (index < 3) tr.classList.add("table-warning");
+      tr.innerHTML = `
+        <td>${item.rank}</td>
+        <td>${item.name}</td>
+        <td>${item.club}</td>
+        <td>${item.age_group}</td>
+        <td>${item.stroke}</td>
+        <td class="fw-bold">${item.score}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    if (updatedAtEl && updatedAt) {
+      updatedAtEl.textContent = "آخرین به‌روزرسانی: " + updatedAt;
+    }
+  }
+
+  function refreshRankings() {
+    fetch("/api/live-rankings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          renderRankings(data.items, data.updated_at);
+        }
+      })
+      .catch((err) => console.error("live rankings error", err));
+  }
+
+  // Refresh every 60 seconds
+  setInterval(refreshRankings, 60000);
+});

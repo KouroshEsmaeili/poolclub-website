@@ -314,45 +314,57 @@
       <div class="col-12 text-center">
         <h3 class="mb-3">رده‌بندی زنده شناگران</h3>
         <p class="text-muted mb-1">
-          بر اساس امتیازدهی {{ ratings.source }}
+          بر اساس Top Swims در Swimcloud (USA)
         </p>
         <p class="text-muted small">
-          آخرین به‌روزرسانی: {{ ratings.last_updated }}
+          {% if live_rankings_updated_at %}
+            آخرین به‌روزرسانی: {{ live_rankings_updated_at }}
+          {% else %}
+            در حال حاضر امکان دریافت اطلاعات زنده وجود ندارد.
+          {% endif %}
         </p>
       </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-striped table-hover align-middle text-center">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col">ردیف</th>
-            <th scope="col">نام شناگر</th>
-            <th scope="col">باشگاه</th>
-            <th scope="col">رده سنی</th>
-            <th scope="col">استایل تخصصی</th>
-            <th scope="col">امتیاز</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in ratings.swimmers %}
-          <tr class="{% if loop.index <= 3 %}table-warning{% endif %}">
-            <td>{{ s.rank }}</td>
-            <td>{{ s.name }}</td>
-            <td>{{ s.club }}</td>
-            <td>{{ s.age_group }}</td>
-            <td>{{ s.style }}</td>
-            <td class="fw-bold">{{ s.rating }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% if live_rankings %}
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle text-center">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">ردیف</th>
+              <th scope="col">نام شناگر</th>
+              <th scope="col">باشگاه</th>
+              <th scope="col">رده (Men/Women)</th>
+              <th scope="col">ایونت / استایل</th>
+              <th scope="col">امتیاز (FINA)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in live_rankings %}
+              <tr class="{% if loop.index <= 3 %}table-warning{% endif %}">
+                <td>{{ item.rank }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.club }}</td>
+                <td>{{ item.age_group }}</td>   {# Men / Women #}
+                <td>{{ item.stroke }}</td>      {# e.g., 400 Free, 50 Back #}
+                <td class="fw-bold">{{ item.score }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-    <p class="text-center text-muted small mt-3">
-      * ردیف‌های هایلایت شده سه نفر برتر فعلی هستند.
-    </p>
+      <p class="text-center text-muted small mt-3">
+        * ردیف‌های هایلایت شده سه نفر برتر فعلی (از کل لیست) هستند.
+      </p>
+    {% else %}
+      <p class="text-center text-muted">
+        در حال حاضر داده‌ای برای نمایش رده‌بندی زنده در دسترس نیست.
+      </p>
+    {% endif %}
   </div>
+
+
 </section>
 
 <!-- contact-section -->
