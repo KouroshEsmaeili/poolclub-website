@@ -3,11 +3,8 @@
 
 {% block content %}
 <div class="topbar d-flex justify-content-between align-items-center">
-  <h3 class="m-0">کلاس‌های من</h3>
+  <h3 class="m-0">کلاس‌ها و دوره‌ها</h3>
   <div class="d-flex gap-2">
-    <a href="{{ url_for('main.user_dashboard') }}" class="btn btn-light btn-sm">
-      بازگشت به داشبورد
-    </a>
     <a href="{{ url_for('main.wallet') }}" class="btn btn-success btn-sm">
       <i class="fas fa-wallet ms-1"></i> شارژ کیف پول
     </a>
@@ -15,30 +12,129 @@
 </div>
 
 <div class="container-fluid">
+
   <div class="row g-4">
+
+    {# ===== Card 1: Available classes (catalog + sign up) ===== #}
+    <div class="col-12">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">لیست کلاس‌ها و دوره‌ها</h5>
+            <span class="text-muted small">
+              انتخاب کلاس و ثبت‌نام با استفاده از کیف پول
+            </span>
+          </div>
+
+          {% if classes and classes.categories %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th scope="col">کلاس</th>
+                    <th scope="col">دسته</th>
+                    <th scope="col">مربی</th>
+                    <th scope="col">زمان</th>
+                    <th scope="col">ظرفیت</th>
+                    <th scope="col">قیمت</th>
+                    <th scope="col">توضیحات</th>
+                    <th scope="col">برچسب‌ها</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cat in classes.categories %}
+                    {% for c in cat['items'] %}
+                      <tr class="text-center">
+                        <td class="text-start">
+                          <strong>{{ c.name }}</strong>
+                        </td>
+                        <td class="small text-muted">
+                          {{ cat.title }}
+                        </td>
+                        <td class="small">
+                          {{ c.coach }}
+                        </td>
+                        <td class="small">
+                          {{ c.time }}
+                        </td>
+                        <td class="small">
+                          {{ c.capacity }} نفر
+                        </td>
+                        <td class="fw-bold small text-danger">
+                          {{ c.price_amount }} <span class="text-muted">تومان</span>
+                        </td>
+                        <td class="text-start small text-muted"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            style="cursor: help;"
+                            title="{{ c.description }}">
+                          {{ c.description }}
+                        </td>
+                        <td class="small">
+                          {% if c.tags %}
+                            {% for tag in c.tags %}
+                              <span class="badge bg-info text-dark ms-1 mb-1">{{ tag }}</span>
+                            {% endfor %}
+                          {% else %}
+                            <span class="text-muted">-</span>
+                          {% endif %}
+                        </td>
+                        <td class="small">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-primary js-class-enroll-btn"
+                            data-slug="{{ c.slug }}"
+                          >
+                            ثبت‌نام
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">
+              در حال حاضر کلاسی برای نمایش تعریف نشده است.
+            </p>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ===== Card 2: My class enrollments ===== #}
+  <div class="row g-4 mt-3">
     <div class="col-12">
       <div class="card shadow-sm border-0">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">لیست کلاس‌های ثبت‌نام‌شده</h5>
+            <h5 class="card-title mb-0">کلاس‌های ثبت‌نام‌شده من</h5>
+            <span class="text-muted small">
+              سوابق ثبت‌نام در کلاس‌ها
+            </span>
           </div>
 
           {% if my_classes %}
             <div class="table-responsive">
-              <table class="table table-hover align-middle text-center mb-0">
+              <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
-                  <tr>
+                  <tr class="text-center">
                     <th>تاریخ ثبت‌نام</th>
                     <th>نام کلاس</th>
                     <th>مربی</th>
-                    <th>زمان برگزاری</th>
+                    <th>زمان</th>
                     <th>هزینه</th>
                     <th>وضعیت</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for e in my_classes %}
-                    <tr>
+                    <tr class="text-center">
                       <td class="small">
                         {{ e.enrolled_at.strftime('%Y-%m-%d %H:%M') }}
                       </td>
@@ -77,5 +173,62 @@
       </div>
     </div>
   </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Tooltips for descriptions
+      const tooltipTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      );
+      tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
+      // Class enroll buttons
+      document.querySelectorAll(".js-class-enroll-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const slug = this.dataset.slug;
+          if (!slug) {
+            alert("کلاس معتبر یافت نشد.");
+            return;
+          }
+
+          const originalText = this.textContent;
+          this.disabled = true;
+          this.textContent = "در حال ثبت‌نام...";
+
+          fetch("/api/classes/enroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ class_slug: slug })
+          })
+            .then(res =>
+              res.json().then(data => ({ status: res.status, body: data }))
+            )
+            .then(({ status, body }) => {
+              this.disabled = false;
+              this.textContent = originalText;
+
+              if (body.status === "error" || status >= 400) {
+                alert(body.message || "خطا در ثبت‌نام کلاس.");
+                return;
+              }
+
+              alert(body.message || "ثبت‌نام با موفقیت انجام شد.");
+              // Refresh page to update "کلاس‌های من"
+              window.location.reload();
+            })
+            .catch(err => {
+              console.error(err);
+              this.disabled = false;
+              this.textContent = originalText;
+              alert("خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.");
+            });
+        });
+      });
+    });
+  </script>
 {% endblock %}

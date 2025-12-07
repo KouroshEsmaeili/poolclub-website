@@ -533,16 +533,16 @@ def user_classes():
     site = load_json("site.json")
     user = current_user
 
-    # می‌توانیم بعداً براساس تاریخ و وضعیت مرتب کنیم
-    my_classes = sorted(
-        user.class_enrollments,
-        key=lambda e: e.enrolled_at,
-        reverse=True,
-    )
+    # همه کلاس‌های تعریف شده در JSON
+    classes_cfg = load_json("classes.json")
+
+    # کلاس‌های ثبت‌نام‌شده‌ی این کاربر
+    my_classes = getattr(user, "class_enrollments", [])
 
     return render_template(
         "user/classes.html",
         site=site,
         user=user,
+        classes=classes_cfg,     
         my_classes=my_classes,
     )
