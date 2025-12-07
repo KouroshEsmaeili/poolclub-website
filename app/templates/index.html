@@ -93,12 +93,19 @@
                   <li>مناسب برای: {{ f.suitable_for }}</li>
                 {% endif %}
               </ul>
-
-              <!-- تگ سناریو – بعداً وصل می‌کنیم به سیستم رزرو/کلاس‌ها -->
               <div class="mt-auto">
                 {% if cat.key == 'pools' %}
-                  <span class="badge bg-primary ms-1">رزرو سانس</span>
-                  <span class="badge bg-outline-secondary border text-secondary">لاین‌بندی مسابقه</span>
+                  <a href="#"
+                    class="badge bg-primary ms-1 text-decoration-none js-booking-trigger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#bookingModal"
+                    data-facility-slug="{{ f.slug }}"
+                    data-facility-name="{{ f.name }}">
+                    رزرو سانس
+                  </a>
+                  <span class="badge bg-outline-secondary border text-secondary">
+                    لاین‌بندی مسابقه
+                  </span>
                 {% elif cat.key == 'wellness' %}
                   <span class="badge bg-success ms-1">ریکاوری</span>
                 {% else %}
