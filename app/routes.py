@@ -56,9 +56,10 @@ def index():
     prices = load_json('prices.json')
 
     try:
-        live_rankings, live_rankings_updated_at = fetch_swimcloud_rankings()
+        live_rankings_men, live_rankings_women, live_rankings_updated_at = fetch_swimcloud_rankings()
     except Exception as exc:
-        live_rankings = []
+        live_rankings_men = []
+        live_rankings_women = []
         live_rankings_updated_at = None
         print("Error fetching Swimcloud rankings:", exc)
 
@@ -69,8 +70,9 @@ def index():
                                          events=events,
                                          ratings=ratings,
                                          prices=prices,
-                                         live_rankings=live_rankings,
-                                         live_rankings_updated_at=live_rankings_updated_at
+                                         live_rankings_men=live_rankings_men,
+                                         live_rankings_women=live_rankings_women,
+                                         live_rankings_updated_at=live_rankings_updated_at,
                                          )
 
 

@@ -326,36 +326,93 @@
       </div>
     </div>
 
-    {% if live_rankings %}
-      <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle text-center">
-          <thead class="table-dark">
-            <tr>
-              <th scope="col">ردیف</th>
-              <th scope="col">نام شناگر</th>
-              <th scope="col">باشگاه</th>
-              <th scope="col">رده (Men/Women)</th>
-              <th scope="col">ایونت / استایل</th>
-              <th scope="col">امتیاز (FINA)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in live_rankings %}
-              <tr class="{% if loop.index <= 3 %}table-warning{% endif %}">
-                <td>{{ item.rank }}</td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.club }}</td>
-                <td>{{ item.age_group }}</td>   {# Men / Women #}
-                <td>{{ item.stroke }}</td>      {# e.g., 400 Free, 50 Back #}
-                <td class="fw-bold">{{ item.score }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    {% if live_rankings_men or live_rankings_women %}
+      <div class="row">
+        <!-- Men table -->
+        <div class="col-lg-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white text-center">
+              <h5 class="mb-0">مردان (Men)</h5>
+            </div>
+            <div class="card-body p-0">
+              {% if live_rankings_men %}
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover align-middle text-center mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col">ردیف</th>
+                        <th scope="col">نام شناگر</th>
+                        <th scope="col">باشگاه</th>
+                        <th scope="col">ایونت / استایل</th>
+                        <th scope="col">زمان</th>
+                        <th scope="col">امتیاز (FINA)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in live_rankings_men %}
+                        <tr class="{% if loop.index <= 3 %}table-warning{% endif %}">
+                          <td>{{ item.rank }}</td>
+                          <td>{{ item.name }}</td>
+                          <td>{{ item.club }}</td>
+                          <td>{{ item.event }}</td>
+                          <td>{{ item.time }}</td>
+                          <td class="fw-bold">{{ item.score }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <p class="text-center text-muted my-3">اطلاعاتی برای بخش مردان موجود نیست.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Women table -->
+        <div class="col-lg-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white text-center">
+              <h5 class="mb-0">زنان (Women)</h5>
+            </div>
+            <div class="card-body p-0">
+              {% if live_rankings_women %}
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover align-middle text-center mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col">ردیف</th>
+                        <th scope="col">نام شناگر</th>
+                        <th scope="col">باشگاه</th>
+                        <th scope="col">ایونت / استایل</th>
+                        <th scope="col">زمان</th>
+                        <th scope="col">امتیاز (FINA)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in live_rankings_women %}
+                        <tr class="{% if loop.index <= 3 %}table-warning{% endif %}">
+                          <td>{{ item.rank }}</td>
+                          <td>{{ item.name }}</td>
+                          <td>{{ item.club }}</td>
+                          <td>{{ item.event }}</td>
+                          <td>{{ item.time }}</td>
+                          <td class="fw-bold">{{ item.score }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <p class="text-center text-muted my-3">اطلاعاتی برای بخش زنان موجود نیست.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <p class="text-center text-muted small mt-3">
-        * ردیف‌های هایلایت شده سه نفر برتر فعلی (از کل لیست) هستند.
+      <p class="text-center text-muted small mt-2">
+        * ردیف‌های هایلایت شده سه نفر برتر فعلی در هر گروه هستند.
       </p>
     {% else %}
       <p class="text-center text-muted">
@@ -363,8 +420,6 @@
       </p>
     {% endif %}
   </div>
-
-
 </section>
 
 <!-- contact-section -->
