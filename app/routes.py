@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, current_app, abort, request, jsonify
+from flask import Blueprint, render_template, current_app, abort, request, jsonify, redirect, url_for, flash
 from pathlib import Path
 import json
 import datetime as dt
@@ -15,6 +15,8 @@ from .model import (
     POOL_MAX_CAPACITY,
     get_next_reservation,
     refresh_booking_statuses,
+    activate_membership,
+    cancel_membership,
 )
 from .swimcloud_scraper import fetch_swimcloud_rankings
 
@@ -46,7 +48,8 @@ def load_json(name: str):
 def index():
     site = load_json('site.json')
     hours = load_json('hours.json')
-    facilities = load_json('facilities.json')
+    pools = load_json('pools.json')           
+    programmes = load_json('programmes.json')  
     classes = load_json('classes.json')
 
     raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
@@ -65,7 +68,8 @@ def index():
 
     return render_template('index.html', site=site,
                                          hours=hours,
-                                         facilities=facilities,
+                                         pools=pools,                    
+                                         programmes=programmes,                                           
                                          classes=classes,
                                          events=events,
                                          ratings=ratings,
@@ -128,6 +132,109 @@ def wallet():
         user=user,
         transactions=transactions
     )
+
+@main.route("/dashboard/membership")
+@login_required
+def membership():
+    site = load_json("site.json")
+    user = current_user
+
+    memberships_cfg = load_json("memberships.json")
+    plans = memberships_cfg.get("plans", [])
+
+    # به‌روزرسانی وضعیت expired
+    today = dt.date.today()
+    for item in user.membership_history:
+        if item.status == "active" and item.expires_at < today:
+            item.status = "expired"
+
+    membership_history = sorted(
+        user.membership_history,
+        key=lambda item: item.purchased_at,
+        reverse=True,
+    )
+
+    return render_template(
+        "user/membership.html",
+        site=site,
+        user=user,
+        plans=plans,
+        membership_history=membership_history,
+        today=today,
+    )
+
+@main.route("/dashboard/membership/buy", methods=["POST"])
+@login_required
+def membership_buy():
+    slug = (request.form.get("plan_slug") or "").strip()
+
+    memberships_cfg = load_json("memberships.json")
+    plans = memberships_cfg.get("plans", [])
+
+    plan = next((p for p in plans if p.get("slug") == slug), None)
+    if not plan:
+        flash("طرح اشتراک انتخاب‌شده یافت نشد.", "danger")
+        return redirect(url_for("main.membership"))
+
+    try:
+        price = int(plan.get("price", 0) or 0)
+        duration_days = int(plan.get("duration_days", 0) or 0)
+    except (TypeError, ValueError):
+        flash("طرح اشتراک نامعتبر است.", "danger")
+        return redirect(url_for("main.membership"))
+
+    if price <= 0 or duration_days <= 0:
+        flash("طرح اشتراک نامعتبر است.", "danger")
+        return redirect(url_for("main.membership"))
+
+        # کم کردن از کیف پول کاربر
+    description = f"خرید اشتراک {plan.get('name', '')}"
+    if not current_user.charge(price, description=description):
+        flash("موجودی کیف پول برای خرید این اشتراک کافی نیست.", "danger")
+        return redirect(url_for("main.membership"))
+
+    # فعال‌سازی / تمدید اشتراک و ثبت در history
+    history_item = activate_membership(
+        current_user,
+        plan_slug=plan["slug"],
+        plan_name=plan.get("name", ""),
+        duration_days=duration_days,
+        price=price,
+    )
+
+    flash(
+        f"اشتراک «{plan.get('name', '')}» با موفقیت فعال شد. "
+        f"اعتبار تا {history_item.expires_at}.",
+        "success",
+    )
+
+    return redirect(url_for("main.membership"))
+
+
+@main.route("/dashboard/membership/cancel", methods=["POST"])
+@login_required
+def membership_cancel():
+    history_id = (request.form.get("history_id") or "").strip()
+    if not history_id:
+        flash("شناسه اشتراک ارسال نشده است.", "danger")
+        return redirect(url_for("main.membership"))
+
+    ok, msg, item = cancel_membership(current_user, history_id)
+    if not ok:
+        flash(msg, "danger")
+        return redirect(url_for("main.membership"))
+
+    # بازگشت مبلغ به کیف پول
+    refund_amount = item.amount or 0
+    if refund_amount > 0:
+        current_user.deposit(
+            refund_amount,
+            description=f"استرداد اشتراک {item.plan_name}",
+        )
+
+    flash("اشتراک با موفقیت لغو شد و مبلغ به کیف پول بازگشت.", "success")
+    return redirect(url_for("main.membership"))
+
 
 @main.route("/api/wallet/deposit", methods=["POST"])
 @login_required
@@ -343,3 +450,15 @@ def api_live_rankings():
             "status": "error",
             "message": "خطا در دریافت رده‌بندی زنده.",
         }), 500
+    
+
+@main.route("/api/pools")
+def api_pools():
+    pools = load_json("pools.json")
+    return jsonify(pools)
+
+
+@main.route("/api/programmes")
+def api_programmes():
+    programmes = load_json("programmes.json")
+    return jsonify(programmes)

@@ -1,0 +1,250 @@
+{% extends "dashboard_base.html" %}
+{% block title %}اشتراک من | {{ site.brand }}{% endblock %}
+
+{% block content %}
+<div class="topbar d-flex justify-content-between align-items-center">
+  <h3 class="m-0">اشتراک من</h3>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.wallet') }}" class="btn btn-success btn-sm">
+      <i class="fas fa-wallet ms-1"></i> شارژ کیف پول
+    </a>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <div class="row g-4">
+
+    {# ===== Left: Current membership & wallet ===== #}
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100 border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title mb-0">وضعیت اشتراک</h5>
+            <span class="badge bg-primary-subtle text-primary border rounded-pill">
+              <i class="fas fa-id-card ms-1"></i> پروفایل اشتراک
+            </span>
+          </div>
+
+          <hr class="mt-3 mb-3">
+
+          {% if user.has_active_membership() %}
+            <div class="mb-3">
+              <div class="small text-muted mb-1">طرح فعال:</div>
+              <h6 class="fw-bold mb-2">
+                {{ user.membership_name }}
+              </h6>
+              <div class="small text-muted mb-1">اعتبار تا:</div>
+              <p class="mb-2">
+                <span class="badge bg-success-subtle text-success border">
+                  {{ user.membership_expires_at }}
+                </span>
+              </p>
+              <p class="small text-muted mb-0">
+                می‌توانید یک طرح دیگر خریداری کنید تا اعتبار اشتراک شما
+                از تاریخ انقضای فعلی تمدید شود.
+              </p>
+            </div>
+          {% else %}
+            <div class="mb-3">
+              <p class="text-muted mb-2">
+                در حال حاضر هیچ اشتراک فعالی ندارید.
+              </p>
+              <p class="small text-muted mb-0">
+                یک طرح را از لیست سمت راست انتخاب کنید و با استفاده از کیف پول خود خریداری کنید.
+              </p>
+            </div>
+          {% endif %}
+
+          <hr class="mt-3 mb-3">
+
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="small text-muted mb-1">موجودی فعلی کیف پول:</div>
+              <h5 class="fw-bold mb-0">
+                {{ user.wallet_balance or 0 }} <span class="fs-6 text-muted">تومان</span>
+              </h5>
+            </div>
+            <a href="{{ url_for('main.wallet') }}" class="btn btn-outline-success btn-sm">
+              مدیریت کیف پول
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    {# ===== Plans table (full-width, horizontal scroll) ===== #}
+    <div class="col-md-8">
+    <div class="card shadow-sm border-0 h-100">
+        <div class="card-body d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">طرح‌های اشتراک</h5>
+            <span class="text-muted small">
+            مقایسه طرح‌ها و خرید با کیف پول
+            </span>
+        </div>
+
+        {% if plans %}
+            <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr class="text-center">
+                    <th scope="col">طرح</th>
+                    <th scope="col">برچسب</th>
+                    <th scope="col">مدت (روز)</th>
+                    <th scope="col">قیمت (تومان)</th>
+                    <th scope="col">توضیحات کوتاه</th>
+                    <th scope="col">عملیات</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for plan in plans %}
+                    {% set is_current = user.has_active_membership() and user.membership_slug == plan.slug %}
+                    <tr class="text-center">
+                    <td class="text-start">
+                        <strong>{{ plan.name }}</strong>
+                        {% if is_current %}
+                        <span class="badge bg-primary-subtle text-primary border ms-1">
+                            فعال
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if plan.tag %}
+                        <span class="badge bg-{{ plan.badge_class or 'primary' }}">
+                            {{ plan.tag }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted small">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ plan.duration_days }}
+                    </td>
+                    <td class="fw-bold">
+                        {{ plan.price }}
+                    </td>
+                    <td
+                        class="text-muted mb-2"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="{{ plan.description_long or plan.description }}"
+                        style="cursor: help;"
+                        >
+                        {{ plan.description }}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('main.membership_buy') }}">
+                        <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                        <button type="submit"
+                                class="btn btn-sm {% if is_current %}btn-outline-primary{% else %}btn-primary{% endif %}">
+                            {% if is_current %}
+                            تمدید / افزایش اعتبار
+                            {% else %}
+                            خرید با کیف پول
+                            {% endif %}
+                        </button>
+                        </form>
+                    </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">
+            در حال حاضر هیچ طرح اشتراکی تعریف نشده است.
+            </p>
+        {% endif %}
+        </div>
+    </div>
+    </div>
+
+  </div>
+
+  {# ===== History row ===== #}
+  <div class="row g-4 mt-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">سوابق خرید اشتراک</h5>
+            <span class="text-muted small">
+              لغو و استرداد فقط در همان روز خرید امکان‌پذیر است.
+            </span>
+          </div>
+
+          {% if membership_history %}
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th scope="col">تاریخ خرید</th>
+                    <th scope="col">طرح</th>
+                    <th scope="col">مبلغ</th>
+                    <th scope="col">تاریخ انقضا</th>
+                    <th scope="col">وضعیت</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% set today_str = today.strftime('%Y-%m-%d') %}
+                  {% for item in membership_history %}
+                    {% set purchase_day = item.purchased_at.strftime('%Y-%m-%d') %}
+                    {% set can_cancel = (item.status == 'active' and purchase_day == today_str) %}
+
+                    <tr class="text-center {% if can_cancel %}table-warning-subtle{% endif %}">
+                      <td class="small">
+                        {{ item.purchased_at.strftime('%Y-%m-%d %H:%M') }}
+                      </td>
+                      <td class="text-start small">
+                        {{ item.plan_name }}
+                      </td>
+                      <td class="text-danger fw-bold small">
+                        {{ item.amount }} <span class="text-muted">تومان</span>
+                      </td>
+                      <td class="small">
+                        {{ item.expires_at }}
+                      </td>
+                      <td class="small">
+                        {% if item.status == 'active' %}
+                          <span class="badge bg-success">فعال</span>
+                        {% elif item.status == 'cancelled' %}
+                          <span class="badge bg-secondary">لغوشده</span>
+                        {% elif item.status == 'expired' %}
+                          <span class="badge bg-dark">منقضی</span>
+                        {% else %}
+                          <span class="badge bg-light text-muted">{{ item.status }}</span>
+                        {% endif %}
+                      </td>
+                      <td class="small">
+                        {% if can_cancel %}
+                          <form method="post"
+                                action="{{ url_for('main.membership_cancel') }}"
+                                class="d-inline">
+                            <input type="hidden" name="history_id" value="{{ item.id }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                              لغو و استرداد
+                            </button>
+                          </form>
+                        {% else %}
+                          <span class="text-muted">-</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">
+              تاکنون هیچ اشتراکی خریداری نشده است.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -43,38 +43,26 @@
   </div>
 </section>
 
-<!-- Facilities: امکانات و سالن‌ها -->
-<section class="projects-section bg-light" id="facilities">
+{# --- Pools section: استخرها --- #}
+<section class="py-5">
   <div class="container px-4 px-lg-5">
-
-    <!-- هِدر سکشن -->
-    <div class="row mb-5">
-      <div class="col-12 text-center">
-        <h2 class="mb-3">امکانات و سالن‌های {{ site.brand }}</h2>
-        <p class="text-muted">
-          از استخر اصلی ۵۰ متری تا استخر آموزشی، سونا، جکوزی و فضاهای ریکاوری—همه‌چیز برای تمرین حرفه‌ای و تفریح خانوادگی آماده است.
-        </p>
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="mb-3">استخرها</h3>
       </div>
     </div>
 
-    <!-- دسته‌بندی‌ها: استخرها / سونا و ریکاوری / امکانات تکمیلی -->
-    {% for cat in facilities.categories %}
-      <div class="row mb-3">
-        <div class="col-12">
-          <h4 class="mb-3">{{ cat.title }}</h4>
-        </div>
-      </div>
-
-      <div class="row gx-4 gx-lg-5 mb-5">
-        {% for f in cat['items'] %}
+    <div class="row gx-4 gx-lg-5 mb-5">
+      {% for f in pools.pools %}
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card h-100 shadow-sm">
             {% if f.image %}
-            <div class="facility-image-wrapper">
-              <img src="{{ url_for('static', filename=f.image) }}" class="card-img-top" alt="{{ f.name }}">
-              <div class="facility-image-overlay"></div>
-            </div>
+              <div class="facility-image-wrapper">
+                <img src="{{ url_for('static', filename=f.image) }}" class="card-img-top" alt="{{ f.name }}">
+                <div class="facility-image-overlay"></div>
+              </div>
             {% endif %}
+
             <div class="card-body d-flex flex-column">
               <h5 class="card-title mb-2">{{ f.name }}</h5>
               <p class="card-text text-muted mb-3">{{ f.description }}</p>
@@ -93,34 +81,117 @@
                   <li>مناسب برای: {{ f.suitable_for }}</li>
                 {% endif %}
               </ul>
+
               <div class="mt-auto">
-                {% if cat.key == 'pools' %}
-                  <a href="#"
-                    class="badge bg-primary ms-1 text-decoration-none js-booking-trigger"
-                    data-bs-toggle="modal"
-                    data-bs-target="#bookingModal"
-                    data-facility-slug="{{ f.slug }}"
-                    data-facility-name="{{ f.name }}">
-                    رزرو سانس
-                  </a>
-                  <span class="badge bg-outline-secondary border text-secondary">
-                    لاین‌بندی مسابقه
-                  </span>
-                {% elif cat.key == 'wellness' %}
-                  <span class="badge bg-success ms-1">ریکاوری</span>
-                {% else %}
-                  <span class="badge bg-secondary ms-1">خدمات تکمیلی</span>
-                {% endif %}
+                {# رزرو سانس برای استخرها (مثل قبل) #}
+                <a href="#"
+                   class="badge bg-primary ms-1 text-decoration-none js-booking-trigger"
+                   data-bs-toggle="modal"
+                   data-bs-target="#bookingModal"
+                   data-facility-slug="{{ f.slug }}"
+                   data-facility-name="{{ f.name }}">
+                  رزرو سانس
+                </a>
+                <span class="badge bg-outline-secondary border text-secondary">
+                  لاین‌بندی مسابقه
+                </span>
               </div>
             </div>
           </div>
         </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+
+{# --- Programmes section: wellness + other --- #}
+<section class="py-5 bg-light">
+  <div class="container px-4 px-lg-5">
+    {% for cat in programmes.categories %}
+      <div class="row mb-3">
+        <div class="col-12">
+          <h4 class="mb-3">{{ cat.title }}</h4>
+        </div>
+      </div>
+
+      <div class="row gx-4 gx-lg-5 mb-5">
+        {% for f in cat['items'] %}
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+              {% if f.image %}
+                <div class="facility-image-wrapper">
+                  <img src="{{ url_for('static', filename=f.image) }}" class="card-img-top" alt="{{ f.name }}">
+                  <div class="facility-image-overlay"></div>
+                </div>
+              {% endif %}
+
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-2">{{ f.name }}</h5>
+                <p class="card-text text-muted mb-3">{{ f.description }}</p>
+
+                <ul class="list-unstyled small text-muted mb-3">
+                  {% if f.depth %}
+                    <li>عمق: {{ f.depth }}</li>
+                  {% endif %}
+                  {% if f.length %}
+                    <li>ابعاد/طول: {{ f.length }}</li>
+                  {% endif %}
+                  {% if f.temperature %}
+                    <li>دما: {{ f.temperature }}</li>
+                  {% endif %}
+                  {% if f.suitable_for %}
+                    <li>مناسب برای: {{ f.suitable_for }}</li>
+                  {% endif %}
+                </ul>
+
+                <div class="mt-auto">
+                  {% if cat.key == 'wellness' %}
+                    <!-- Badge -->
+                    <span class="badge bg-success d-inline-block mb-2">ریکاوری</span>
+
+                    <!-- Button -->
+                    {% if current_user.is_authenticated %}
+                      <a href="{{ url_for('main.user_dashboard') }}#membership-card"
+                        class="btn btn-outline-success btn-sm w-100">
+                        مدیریت اشتراک
+                      </a>
+                    {% else %}
+                      <a href="{{ url_for('auth.login', next=url_for('main.user_dashboard') + '#membership-card') }}"
+                        class="btn btn-outline-success btn-sm w-100">
+                        ورود برای مدیریت اشتراک
+                      </a>
+                    {% endif %}
+
+                  {% elif cat.key == 'other' %}
+                    <!-- Badge -->
+                    <span class="badge bg-secondary d-inline-block mb-2">خدمات تکمیلی</span>
+
+                    <!-- Button -->
+                    {% if current_user.is_authenticated %}
+                      <a href="{{ url_for('main.user_dashboard') }}#membership-card"
+                        class="btn btn-outline-secondary btn-sm w-100">
+                        مشاهده در داشبورد
+                      </a>
+                    {% else %}
+                      <a href="{{ url_for('auth.login', next=url_for('main.user_dashboard') + '#membership-card') }}"
+                        class="btn btn-outline-secondary btn-sm w-100">
+                        ورود برای مشاهده در داشبورد
+                      </a>
+                    {% endif %}
+                  {% endif %}
+
+                </div>
+
+              </div>
+            </div>
+          </div>
         {% endfor %}
       </div>
     {% endfor %}
-
-    </div>
+  </div>
 </section>
+
 
 <!-- Classes: کلاس‌ها و دوره‌ها -->
 <section class="projects-section bg-white" id="classes">

@@ -85,7 +85,10 @@
       class="{% if request.endpoint == 'main.bookings' %}active{% endif %}">
       <i class="fas fa-calendar-check ms-1"></i> رزروهای من
     </a>
-    <a href="#"><i class="fas fa-id-card ms-1"></i> اشتراک من</a>
+    <a href="{{ url_for('main.membership') }}"
+      class="{% if request.endpoint == 'main.membership' %}active{% endif %}">
+      <i class="fas fa-id-card ms-1"></i> اشتراک من
+    </a>    
     <a href="#"><i class="fas fa-swimmer ms-1"></i> کلاس‌های من</a>
     <a href="#"><i class="fas fa-user ms-1"></i> تنظیمات پروفایل</a>
 
@@ -144,6 +147,14 @@
 
     <!-- Global app JS (booking modal, classes, navbar, etc.) -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-  {% block scripts %}{% endblock %}
+  {% block scripts %}
+      <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    });
+    </script>
+  {% endblock %}
+
 </body>
 </html>

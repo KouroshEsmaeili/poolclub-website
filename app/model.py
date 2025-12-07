@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 import datetime as dt
 
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import uuid
 
 
 # ---------------------------
@@ -17,6 +18,16 @@ class WalletTransaction:
     type: str  # deposit, purchase, refund
     timestamp: dt.datetime = field(default_factory=dt.datetime.utcnow)
     description: str = ""
+
+@dataclass
+class MembershipHistoryItem:
+    id: str
+    plan_slug: str
+    plan_name: str
+    purchased_at: dt.datetime
+    expires_at: dt.date
+    amount: int
+    status: str = "active"  # active, cancelled, expired
 
 
 # ---------------------------
@@ -35,6 +46,12 @@ class User(UserMixin):
     wallet_balance: int = 0
     wallet_transactions: List[WalletTransaction] = field(default_factory=list)
 
+    # MEMBERSHIP
+    membership_slug: Optional[str] = None
+    membership_name: Optional[str] = None
+    membership_expires_at: Optional[dt.date] = None
+    membership_history: List[MembershipHistoryItem] = field(default_factory=list)
+
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
 
@@ -52,6 +69,25 @@ class User(UserMixin):
             )
             return True
         return False
+    
+    def has_active_membership(self) -> bool:
+        today = dt.date.today()
+        if not self.membership_slug or not self.membership_expires_at:
+            return False
+        if self.membership_expires_at < today:
+            return False
+
+        # اگر آخرین رکورد این طرح لغوشده باشد، دیگر فعال نیست
+        for item in reversed(self.membership_history):
+            if item.plan_slug == self.membership_slug:
+                return item.status == "active" and item.expires_at >= today
+        return True
+
+    def clear_membership(self):
+        """Remove any membership info (used if you ever implement cancel)."""
+        self.membership_slug = None
+        self.membership_name = None
+        self.membership_expires_at = None
 
 # ---------------------------
 # TEMPORARY In-Memory Storage
@@ -90,7 +126,7 @@ def get_user_by_id(user_id: str) -> Optional[User]:
 
 # Seed a test user
 if not _USERS_BY_EMAIL:
-    create_user("test@poolclub.ir", "123456", first_name="کاربر", last_name="آزمایشی")
+    create_user("test", "123456", first_name="کاربر", last_name="آزمایشی")
 
 
 # ---------------------------
@@ -258,3 +294,85 @@ def refresh_booking_statuses():
         # فقط رزروهای فعال را چک می‌کنیم
         if booking.status == "active" and is_past_booking(booking.date, booking.time):
             booking.status = "expired"
+
+def activate_membership(
+    user: User,
+    plan_slug: str,
+    plan_name: str,
+    duration_days: int,
+    price: int,
+) -> MembershipHistoryItem:
+    """
+    فعال‌سازی یا تمدید اشتراک:
+      - اگر همان پلن قبلاً فعال است → از تاریخ انقضای فعلی تمدید می‌کنیم.
+      - در غیر این صورت → از امروز شروع می‌شود.
+    یک MembershipHistoryItem جدید ایجاد می‌کند و به history اضافه می‌کند.
+    """
+    now = dt.datetime.now()
+    today = now.date()
+
+    # پایه برای تمدید: اگر همین پلن فعال است و منقضی نشده، از expire فعلی شروع کن
+    if (
+        user.membership_slug == plan_slug
+        and user.membership_expires_at
+        and user.membership_expires_at >= today
+    ):
+        start_date = user.membership_expires_at
+    else:
+        start_date = today
+
+    expires_at = start_date + dt.timedelta(days=duration_days)
+
+    # به‌روزرسانی اشتراک فعلی روی خود user
+    user.membership_slug = plan_slug
+    user.membership_name = plan_name
+    user.membership_expires_at = expires_at
+
+    # اتوماتیک کردن expired برای history
+    for item in user.membership_history:
+        if item.status == "active" and item.expires_at < today:
+            item.status = "expired"
+
+    history_item = MembershipHistoryItem(
+        id=str(uuid.uuid4()),
+        plan_slug=plan_slug,
+        plan_name=plan_name,
+        purchased_at=now,
+        expires_at=expires_at,
+        amount=price,
+        status="active",
+    )
+    user.membership_history.append(history_item)
+    return history_item
+
+
+def cancel_membership(user: User, history_id: str) -> Tuple[bool, str, Optional[MembershipHistoryItem]]:
+    """
+    لغو اشتراک:
+      - فقط اگر رکورد active و تاریخ خرید = امروز باشد.
+      - status → cancelled
+      - اگر این رکورد، اشتراک فعلی user باشد، اشتراک کاربر را خالی می‌کنیم.
+    """
+    today = dt.date.today()
+
+    for item in user.membership_history:
+        if item.id == history_id:
+            if item.status != "active":
+                return False, "این اشتراک در حال حاضر فعال نیست.", None
+            if item.purchased_at.date() != today:
+                return False, "امکان لغو اشتراک فقط در روز خرید وجود دارد.", None
+
+            item.status = "cancelled"
+
+            # اگر این اشتراک، اشتراک فعلی کاربر است، آن را خالی کن
+            if (
+                user.membership_slug == item.plan_slug
+                and user.membership_expires_at == item.expires_at
+            ):
+                user.membership_slug = None
+                user.membership_name = None
+                user.membership_expires_at = None
+
+            return True, "", item
+
+    return False, "اشتراک مورد نظر یافت نشد.", None
