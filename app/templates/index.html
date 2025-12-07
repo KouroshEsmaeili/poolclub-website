@@ -215,18 +215,20 @@
 
       <div class="row gx-4 gx-lg-5 mb-5">
         {% for c in cat['items'] %}
-        <div class="col-md-6 col-lg-4 mb-4">
-          <div
-            class="class-card h-100 shadow-sm"
-            role="button"
-            tabindex="0"
-            data-name="{{ c.name }}"
-            data-coach="{{ c.coach }}"
-            data-time="{{ c.time }}"
-            data-capacity="{{ c.capacity }}"
-            data-price="{{ c.price }}"
-            data-description="{{ c.description }}"
-          >
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div
+              class="class-card h-100 shadow-sm"
+              role="button"
+              tabindex="0"
+              data-slug="{{ c.slug }}"
+              data-name="{{ c.name }}"
+              data-coach="{{ c.coach }}"
+              data-time="{{ c.time }}"
+              data-capacity="{{ c.capacity }}"
+              data-price="{{ c.price }}"
+              data-price-amount="{{ c.price_amount }}"
+              data-description="{{ c.description }}"
+            >
 
             <div class="class-img-wrapper">
               <img src="{{ url_for('static', filename=c.image) }}" alt="{{ c.name }}">
@@ -288,8 +290,15 @@
 
       </div>
       <div class="modal-footer d-block">
+        <input type="hidden" id="classModalSlug">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">بستن</button>
-        <button type="button" class="btn btn-primary float-start" id="classModalSignupButton">
+        <button
+          id="classModalSignupButton"
+          type="button"
+          class="btn btn-primary w-100 mt-3"
+          data-authenticated="{{ '1' if current_user.is_authenticated else '0' }}"
+          data-login-url="{{ url_for('auth.login', next=url_for('main.user_dashboard') + '#classes-section') }}"
+        >
           ثبت‌نام در این کلاس
         </button>
       </div>

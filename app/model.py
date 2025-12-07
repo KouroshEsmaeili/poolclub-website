@@ -31,6 +31,22 @@ class MembershipHistoryItem:
 
 
 # ---------------------------
+# Class Model
+# ---------------------------
+@dataclass
+class ClassEnrollment:
+    id: str
+    class_slug: str
+    class_name: str
+    coach: str
+    time: str
+    price: int
+    enrolled_at: dt.datetime
+    status: str = "active"  # active, cancelled
+
+
+
+# ---------------------------
 # User Model
 # ---------------------------
 
@@ -51,6 +67,10 @@ class User(UserMixin):
     membership_name: Optional[str] = None
     membership_expires_at: Optional[dt.date] = None
     membership_history: List[MembershipHistoryItem] = field(default_factory=list)
+
+    # Classes
+    class_enrollments: List[ClassEnrollment] = field(default_factory=list)
+
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
@@ -376,3 +396,28 @@ def cancel_membership(user: User, history_id: str) -> Tuple[bool, str, Optional[
             return True, "", item
 
     return False, "اشتراک مورد نظر یافت نشد.", None
+def enroll_in_class(
+    user: User,
+    class_slug: str,
+    class_name: str,
+    coach: str,
+    time: str,
+    price: int,
+) -> ClassEnrollment:
+    """
+    ثبت‌نام کاربر در یک کلاس.
+    فعلاً محدودیت خاصی (مثلاً یک‌بار ثبت‌نام) اعمال نمی‌کنیم.
+    """
+    now = dt.datetime.now()
+    enrollment = ClassEnrollment(
+        id=str(uuid.uuid4()),
+        class_slug=class_slug,
+        class_name=class_name,
+        coach=coach,
+        time=time,
+        price=price,
+        enrolled_at=now,
+        status="active",
+    )
+    user.class_enrollments.append(enrollment)
+    return enrollment

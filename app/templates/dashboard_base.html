@@ -89,7 +89,10 @@
       class="{% if request.endpoint == 'main.membership' %}active{% endif %}">
       <i class="fas fa-id-card ms-1"></i> اشتراک من
     </a>    
-    <a href="#"><i class="fas fa-swimmer ms-1"></i> کلاس‌های من</a>
+    <a href="{{ url_for('main.user_classes') }}"
+      class="{% if request.endpoint == 'main.user_classes' %}active{% endif %}">
+      <i class="fas fa-swimmer ms-1"></i> کلاس‌های من
+    </a>    
     <a href="#"><i class="fas fa-user ms-1"></i> تنظیمات پروفایل</a>
 
     <hr class="border-secondary">

@@ -17,6 +17,8 @@ from .model import (
     refresh_booking_statuses,
     activate_membership,
     cancel_membership,
+    enroll_in_class,
+
 )
 from .swimcloud_scraper import fetch_swimcloud_rankings
 
@@ -24,6 +26,17 @@ from .swimcloud_scraper import fetch_swimcloud_rankings
 main = Blueprint('main', __name__)
 
 
+def find_class_by_slug(slug: str):
+    """
+    کلاس را از فایل classes.json بر اساس slug برمی‌گرداند.
+    خروجی: (category_key, class_dict) یا (None, None)
+    """
+    classes_cfg = load_json("classes.json")
+    for cat in classes_cfg.get("categories", []):
+        for c in cat.get("items", []):
+            if c.get("slug") == slug:
+                return cat.get("key"), c
+    return None, None
 
 def parse_date(e):
     d = e.get('date')
@@ -106,9 +119,8 @@ def user_dashboard():
             past_count += 1
         else:
             upcoming_count += 1
-
-    # فعلاً کلاس‌ها را خالی می‌گذاریم تا بعداً ماژول کلاس‌ها را اضافه کنیم
-    my_classes = []
+    
+    my_classes = current_user.class_enrollments
 
     return render_template(
         "user/dashboard.html",
@@ -462,3 +474,75 @@ def api_pools():
 def api_programmes():
     programmes = load_json("programmes.json")
     return jsonify(programmes)
+
+
+@main.route("/api/classes/enroll", methods=["POST"])
+@login_required
+def api_classes_enroll():
+    data = request.get_json(silent=True) or {}
+    class_slug = (data.get("class_slug") or "").strip()
+
+    if not class_slug:
+        return jsonify({"status": "error", "message": "کلاس نامعتبر است."}), 400
+
+    cat_key, class_cfg = find_class_by_slug(class_slug)
+    if not class_cfg:
+        return jsonify({"status": "error", "message": "کلاس مورد نظر یافت نشد."}), 404
+
+    name = class_cfg.get("name", "")
+    coach = class_cfg.get("coach", "")
+    time_str = class_cfg.get("time", "")
+    price_amount = class_cfg.get("price_amount", 0) or 0
+
+    try:
+        price_amount = int(price_amount)
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "قیمت کلاس نامعتبر است."}), 400
+
+    if price_amount <= 0:
+        return jsonify({"status": "error", "message": "قیمت کلاس نامعتبر است."}), 400
+
+    # Charge wallet
+    desc = f"ثبت‌نام در کلاس: {name}"
+    if not current_user.charge(price_amount, description=desc):
+        return jsonify({
+            "status": "error",
+            "message": "موجودی کیف پول برای ثبت‌نام در این کلاس کافی نیست."
+        }), 402
+
+    # Enroll
+    enrollment = enroll_in_class(
+        current_user,
+        class_slug=class_slug,
+        class_name=name,
+        coach=coach,
+        time=time_str,
+        price=price_amount,
+    )
+
+    return jsonify({
+        "status": "success",
+        "message": f"ثبت‌نام در کلاس «{name}» با موفقیت انجام شد.",
+        "enrollment_id": enrollment.id,
+        "new_balance": current_user.wallet_balance,
+    }), 201
+
+@main.route("/dashboard/classes")
+@login_required
+def user_classes():
+    site = load_json("site.json")
+    user = current_user
+
+    # می‌توانیم بعداً براساس تاریخ و وضعیت مرتب کنیم
+    my_classes = sorted(
+        user.class_enrollments,
+        key=lambda e: e.enrolled_at,
+        reverse=True,
+    )
+
+    return render_template(
+        "user/classes.html",
+        site=site,
+        user=user,
+        my_classes=my_classes,
+    )

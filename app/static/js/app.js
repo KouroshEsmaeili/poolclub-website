@@ -152,7 +152,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const capacityEl = document.getElementById("classModalCapacity");
       const priceEl = document.getElementById("classModalPrice");
       const descriptionEl = document.getElementById("classModalDescription");
-
+      const slug = this.dataset.slug;
+      document.getElementById("classModalSlug").value = slug || "";
+      
       if (titleEl) titleEl.textContent = name || "";
       if (coachEl) coachEl.textContent = coach || "";
       if (timeEl) timeEl.textContent = time || "";
@@ -177,16 +179,60 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // دکمه ثبت‌نام کلاس – فعلاً فقط پیام نمایشی
-  const signupBtn = document.getElementById("classModalSignupButton");
-  if (signupBtn) {
-    signupBtn.addEventListener("click", function () {
-      const title =
-        (document.getElementById("classModalTitle")?.textContent || "").trim();
-      alert(
-        `در نسخه‌های بعدی، این دکمه شما را به روت مخصوص برنامه‌ها/کلاس‌ها برای کلاس:\n«${title}»\nمنتقل می‌کند.`
-      );
-    });
-  }
+const signupBtn = document.getElementById("classModalSignupButton");
+if (signupBtn) {
+  signupBtn.addEventListener("click", function () {
+    const isAuth = this.dataset.authenticated === "1";
+    const loginUrl = this.dataset.loginUrl || "/login";
+
+    if (!isAuth) {
+      window.location.href = loginUrl;
+      return;
+    }
+
+    const titleEl = document.getElementById("classModalTitle");
+    const slugEl = document.getElementById("classModalSlug");
+
+    const className = titleEl ? (titleEl.textContent || "").trim() : "";
+    const slug = slugEl ? (slugEl.value || "").trim() : "";
+
+    if (!slug) {
+      alert("کلاس معتبر یافت نشد.");
+      return;
+    }
+
+    signupBtn.disabled = true;
+    signupBtn.textContent = "در حال ثبت‌نام...";
+
+    fetch("/api/classes/enroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ class_slug: slug })
+    })
+      .then(res => res.json().then(data => ({ status: res.status, body: data })))
+      .then(({ status, body }) => {
+        signupBtn.disabled = false;
+        signupBtn.textContent = "ثبت‌نام در این کلاس";
+
+        if (body.status === "error" || status >= 400) {
+          alert(body.message || "خطا در ثبت‌نام کلاس.");
+          return;
+        }
+
+        alert(body.message || "ثبت‌نام با موفقیت انجام شد.");
+
+        // انتقال به داشبورد کلاس‌ها
+        window.location.href = "/dashboard/classes";
+      })
+      .catch(err => {
+        console.error(err);
+        signupBtn.disabled = false;
+        signupBtn.textContent = "ثبت‌نام در این کلاس";
+        alert("خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.");
+      });
+  });
+}
+
 
   // وضعیت اولیه ناوبار
   handleNavbarShrink();
