@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, current_app, abort, request, jsoni
 from pathlib import Path
 import json
 import datetime as dt
+import re
 
 from flask_login import login_required, current_user
 from .model import (
@@ -264,27 +265,26 @@ def membership_cancel():
 @main.route("/dashboard/events")
 @login_required
 def user_events():
-    site = load_json("site.json")
+  site = load_json("site.json")
 
-    raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
-    events = sorted(raw_events, key=parse_date)
+  raw_events = [e for e in load_json("events.json") if e.get("status") == "published"]
+  events = sorted(raw_events, key=parse_date)
 
-    # annotate events with counts + user registration info
-    for e in events:
-        slug = e.get("slug")
-        if not slug:
-            continue
-        e["registered_count"] = count_event_registrations(slug)
-        e["user_registered"] = user_is_registered_for_event(current_user.id, slug)
+  for e in events:
+      slug = e.get("slug")
+      if not slug:
+          continue
+      e["registered_count"] = count_event_registrations(slug)
+      e["user_registered"] = user_is_registered_for_event(current_user.id, slug)
 
-    my_regs = get_user_event_registrations(current_user.id)
+  my_regs = get_user_event_registrations(current_user.id)
 
-    return render_template(
-        "user/events.html",   # new template
-        site=site,
-        events=events,
-        registrations=my_regs,
-    )
+  return render_template(
+      "user/events.html",
+      site=site,
+      events=events,
+      registrations=my_regs,
+  )
 
 @main.route("/dashboard/profile", methods=["GET", "POST"])
 @login_required
@@ -665,8 +665,8 @@ def user_classes():
         my_classes=my_classes,
     )
 
-@main.route("/api/events/register", methods=["POST"])
-def api_events_register():
+@main.route("/api/events/public-register", methods=["POST"])
+def api_events_public_register():
     data = request.get_json(silent=True) or {}
     event_slug = (data.get("event_slug") or "").strip()
     name = (data.get("name") or "").strip()
@@ -725,7 +725,6 @@ def _parse_price_to_int(price_str: str | None) -> int:
     except ValueError:
         return 0
 
-
 @main.route("/api/events/register", methods=["POST"])
 @login_required
 def api_event_register():
@@ -733,51 +732,41 @@ def api_event_register():
     slug = (data.get("slug") or "").strip()
 
     if not slug:
-        return jsonify({"status": "error", "message": "شناسه رویداد ارسال نشده است."}), 400
+        return jsonify({"status": "error", "message": "رویداد نامعتبر است."}), 400
 
-    raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
-    event = next((e for e in raw_events if e.get("slug") == slug), None)
+    # Load events from JSON
+    all_events = [e for e in load_json("events.json") if e.get("status") == "published"]
+    event = next((e for e in all_events if e.get("slug") == slug), None)
+
     if not event:
-        return jsonify({"status": "error", "message": "رویداد یافت نشد."}), 404
+        return jsonify({"status": "error", "message": "رویداد نامعتبر است."}), 404
 
+    # Check state
     if event.get("state") != "open":
         return jsonify({"status": "error", "message": "ثبت‌نام این رویداد فعال نیست."}), 409
 
-    # ظرفیت (اختیاری)
+    # Capacity (optional)
     capacity = event.get("capacity")
-    current_count = count_event_registrations(slug)
     if capacity is not None:
         try:
             capacity_int = int(capacity)
-            if current_count >= capacity_int:
-                return jsonify({
-                    "status": "error",
-                    "message": "ظرفیت این رویداد تکمیل شده است."
-                }), 409
+            if count_event_registrations(slug) >= capacity_int:
+                return jsonify({"status": "error", "message": "ظرفیت این رویداد تکمیل شده است."}), 409
         except (TypeError, ValueError):
-            pass  # اگر capacity خراب بود، نادیده می‌گیریم
+            pass
 
-    # کاربر قبلاً ثبت‌نام کرده؟
+    # Prevent double registration
     if user_is_registered_for_event(current_user.id, slug):
-        return jsonify({
-            "status": "error",
-            "message": "شما قبلاً در این رویداد ثبت‌نام کرده‌اید."
-        }), 409
+        return jsonify({"status": "error", "message": "شما قبلاً در این رویداد ثبت‌نام کرده‌اید."}), 409
 
-    # مبلغ
-    price_str = event.get("price")
-    amount = _parse_price_to_int(price_str)
+    # Price & wallet
     title = event.get("title") or "رویداد"
+    amount = _parse_price_to_int(event.get("price"))
 
-    # اگر پولی است، از کیف پول کم کن
     if amount > 0:
         if not current_user.charge(amount, description=f"ثبت‌نام رویداد: {title}"):
-            return jsonify({
-                "status": "error",
-                "message": "موجودی کیف پول کافی نیست."
-            }), 402
+            return jsonify({"status": "error", "message": "موجودی کیف پول کافی نیست."}), 402
 
-    # ثبت در حافظه
     reg = create_event_registration(
         user_id=current_user.id,
         event_slug=slug,

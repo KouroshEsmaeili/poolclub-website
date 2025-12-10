@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", function () {
         eventSubmitBtn.textContent = "در حال ثبت...";
       }
 
-      fetch("/api/events/register", {
+      fetch("/api/events/public-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_slug: slug, name, email })
@@ -452,4 +452,17 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
   }
+});
+
+document.querySelectorAll(".js-event-register-wallet-btn").forEach(btn => {
+  btn.addEventListener("click", function () {
+    const slug = this.dataset.slug;
+    const title = this.dataset.title;
+    if (!slug) return;
+
+    if (!confirm(`ثبت‌نام در رویداد:\n«${title}» ؟`)) {
+      return;
+    }
+    registerForEvent(slug);
+  });
 });
