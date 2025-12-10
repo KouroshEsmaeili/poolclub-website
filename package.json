@@ -1,0 +1,28 @@
+{
+  "name": "poolclub-website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KouroshEsmaeili/poolclub-website.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/KouroshEsmaeili/poolclub-website/issues"
+  },
+  "homepage": "https://github.com/KouroshEsmaeili/poolclub-website#readme",
+  "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^7.0.2",
+    "autoprefixer": "^10.4.22",
+    "cssnano": "^7.1.2",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1"
+  }
+}
