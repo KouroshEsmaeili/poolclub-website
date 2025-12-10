@@ -1,21 +1,27 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, List, Tuple
 import datetime as dt
+import uuid
 
-from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-import uuid
+
 
 # ---------------------------
 # Wallet Transaction Model
 # ---------------------------
+
 @dataclass
 class WalletTransaction:
     amount: int
     type: str  # deposit, purchase, refund
     timestamp: dt.datetime = field(default_factory=dt.datetime.utcnow)
     description: str = ""
+
+
+# ---------------------------
+# Membership Model
+# ---------------------------
 
 @dataclass
 class MembershipHistoryItem:
@@ -29,8 +35,9 @@ class MembershipHistoryItem:
 
 
 # ---------------------------
-# Class Model
+# Class Enrollment Model
 # ---------------------------
+
 @dataclass
 class ClassEnrollment:
     id: str
@@ -44,23 +51,27 @@ class ClassEnrollment:
 
 
 # ---------------------------
-# Class Event Registration
+# Event Registration Model
+#   (used for both wallet & public registrations)
 # ---------------------------
+
 @dataclass
 class EventRegistration:
     id: str
     event_slug: str
-    event_title: str
-    user_id: Optional[str]
+    title: str
+    user_id: Optional[str]  # None for guests
     name: str
     email: str
-    created_at: dt.datetime
+    price: int = 0
+    created_at: dt.datetime = field(default_factory=dt.datetime.utcnow)
     status: str = "registered"  # registered, cancelled
 
 
 # ---------------------------
 # User Model
 # ---------------------------
+
 @dataclass
 class User(UserMixin):
     id: str
@@ -69,24 +80,25 @@ class User(UserMixin):
     first_name: str = ""
     last_name: str = ""
 
-    # WALLET
+    # Wallet
     wallet_balance: int = 0
     wallet_transactions: List[WalletTransaction] = field(default_factory=list)
 
-    # MEMBERSHIP
+    # Membership
     membership_slug: Optional[str] = None
     membership_name: Optional[str] = None
     membership_expires_at: Optional[dt.date] = None
     membership_history: List[MembershipHistoryItem] = field(default_factory=list)
 
+    # Profile
     phone: str = ""
-    birthdate: str = ""           # e.g. "2000-01-01"
-    emergency_contact: str = ""   # e.g. phone or name+phone
-
+    birthdate: str = ""          # e.g. "2000-01-01"
+    emergency_contact: str = ""  # text field
 
     # Classes
     class_enrollments: List[ClassEnrollment] = field(default_factory=list)
 
+    # ---- Methods ----
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
@@ -101,11 +113,15 @@ class User(UserMixin):
         if self.wallet_balance >= amount:
             self.wallet_balance -= amount
             self.wallet_transactions.append(
-                WalletTransaction(amount=-amount, type="purchase", description=description)
+                WalletTransaction(
+                    amount=-amount,
+                    type="purchase",
+                    description=description,
+                )
             )
             return True
         return False
-    
+
     def has_active_membership(self) -> bool:
         today = dt.date.today()
         if not self.membership_slug or not self.membership_expires_at:
@@ -113,89 +129,59 @@ class User(UserMixin):
         if self.membership_expires_at < today:
             return False
 
-        # اگر آخرین رکورد این طرح لغوشده باشد، دیگر فعال نیست
         for item in reversed(self.membership_history):
             if item.plan_slug == self.membership_slug:
                 return item.status == "active" and item.expires_at >= today
         return True
 
     def clear_membership(self):
-        """Remove any membership info (used if you ever implement cancel)."""
+        """Remove any membership info (used if you ever implement full cancel)."""
         self.membership_slug = None
         self.membership_name = None
         self.membership_expires_at = None
 
+
 # ---------------------------
 # Booking Model
 # ---------------------------
+
 @dataclass
 class Booking:
     id: str
     user_id: str
-    date: str
-    time: str
-    duration: int
-    type: str  # مثل: "آزاد", "لاین تمرین", "کلاس"
+    date: str          # "YYYY-MM-DD"
+    time: str          # "HH:MM"
+    duration: int      # minutes
+    type: str          # e.g. "شنای آزاد", "لاین تمرین"
     lane: Optional[int] = None
     status: str = "active"  # active, cancelled, expired
 
-# ---------------------------
-# Booking Model
-# ---------------------------
-@dataclass
-class EventRegistration:
-    id: int
-    user_id: int
-    event_slug: str
-    title: str
-    price: int
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    status: str = "registered"  # could later support "cancelled"
-
 
 # ---------------------------
-# TEMPORARY In-Memory Storage
+# In-Memory Storage
 # ---------------------------
+
 _USERS_BY_ID: Dict[str, User] = {}
 _USERS_BY_EMAIL: Dict[str, User] = {}
+
 _BOOKINGS: Dict[str, Booking] = {}
 _BOOKING_COUNTER = 1
+
 POOL_MAX_CAPACITY = 40
+
 _EVENT_REGISTRATIONS: List[EventRegistration] = []
-_EVENT_REG_COUNTER = 1
-_EVENT_REGISTRATIONS: list[EventRegistration] = []
 
 
-def create_event_registration(user_id: int, event_slug: str, title: str, price: int) -> EventRegistration:
-    global _EVENT_REG_COUNTER
-    reg = EventRegistration(
-        id=_EVENT_REG_COUNTER,
-        user_id=user_id,
-        event_slug=event_slug,
-        title=title,
-        price=price,
-    )
-    _EVENT_REG_COUNTER += 1
-    _EVENT_REGISTRATIONS.append(reg)
-    return reg
+# ---------------------------
+# User helpers
+# ---------------------------
 
-
-def get_user_event_registrations(user_id: int) -> list[EventRegistration]:
-    return [r for r in _EVENT_REGISTRATIONS if r.user_id == user_id]
-
-
-def user_is_registered_for_event(user_id: int, event_slug: str) -> bool:
-    return any(
-        r.user_id == user_id and r.event_slug == event_slug and r.status == "registered"
-        for r in _EVENT_REGISTRATIONS
-    )
-
-
-def count_event_registrations(event_slug: str) -> int:
-    return sum(1 for r in _EVENT_REGISTRATIONS
-               if r.event_slug == event_slug and r.status == "registered")
-
-def create_user(email: str, password: str, first_name: str = "", last_name: str = "") -> User:
+def create_user(
+    email: str,
+    password: str,
+    first_name: str = "",
+    last_name: str = "",
+) -> User:
     email_norm = email.lower().strip()
     new_id = str(len(_USERS_BY_ID) + 1)
 
@@ -206,10 +192,8 @@ def create_user(email: str, password: str, first_name: str = "", last_name: str 
         first_name=first_name,
         last_name=last_name,
     )
-
     _USERS_BY_ID[user.id] = user
     _USERS_BY_EMAIL[user.email] = user
-
     return user
 
 
@@ -223,12 +207,49 @@ def get_user_by_id(user_id: str) -> Optional[User]:
     return _USERS_BY_ID.get(str(user_id))
 
 
-# Seed a test user
+# Seed a test user (dev only)
 if not _USERS_BY_EMAIL:
     create_user("test", "123456", first_name="کاربر", last_name="آزمایشی")
 
 
-def create_booking(user_id, date, time, duration, booking_type, lane=None):
+def update_user_email(user: User, new_email: str) -> bool:
+    """
+    Try to update the user's email and keep the _USERS_BY_EMAIL index in sync.
+    Returns True on success, False if email is invalid or already taken.
+    """
+    global _USERS_BY_EMAIL
+
+    email_norm = new_email.lower().strip()
+    if not email_norm:
+        return False
+
+    if email_norm == user.email:
+        return True
+
+    if email_norm in _USERS_BY_EMAIL:
+        return False
+
+    old_email = user.email
+    if old_email in _USERS_BY_EMAIL:
+        del _USERS_BY_EMAIL[old_email]
+
+    user.email = email_norm
+    _USERS_BY_EMAIL[email_norm] = user
+    return True
+
+
+# ---------------------------
+# Booking helpers
+# ---------------------------
+
+def create_booking(
+    user_id: str,
+    date: str,
+    time: str,
+    duration: int,
+    booking_type: str,
+    lane: Optional[int] = None,
+) -> Booking:
     global _BOOKING_COUNTER
 
     booking_id = str(_BOOKING_COUNTER)
@@ -236,67 +257,75 @@ def create_booking(user_id, date, time, duration, booking_type, lane=None):
 
     booking = Booking(
         id=booking_id,
-        user_id=user_id,
+        user_id=str(user_id),
         date=date,
         time=time,
         duration=duration,
         type=booking_type,
-        lane=lane
+        lane=lane,
     )
-
     _BOOKINGS[booking_id] = booking
     return booking
 
 
-def get_user_bookings(user_id):
-    return [b for b in _BOOKINGS.values() if b.user_id == user_id]
+def get_user_bookings(user_id: str) -> List[Booking]:
+    return [b for b in _BOOKINGS.values() if b.user_id == str(user_id)]
 
 
-def cancel_booking(booking_id):
+def cancel_booking(booking_id: str) -> bool:
     if booking_id in _BOOKINGS:
         _BOOKINGS[booking_id].status = "cancelled"
         return True
     return False
 
-def parse_datetime(date, time):
+
+def parse_datetime(date: str, time: str) -> Optional[dt.datetime]:
     """Convert date + time string into a Python datetime."""
     try:
         return dt.datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
-    except:
+    except Exception:
         return None
 
-def is_past_booking(date, time):
+
+def is_past_booking(date: str, time: str) -> bool:
     booking_dt = parse_datetime(date, time)
     if not booking_dt:
         return True
     return booking_dt < dt.datetime.now()
 
 
-def user_has_overlap(user_id, date, time, duration):
+def user_has_overlap(user_id: str, date: str, time: str, duration: int) -> bool:
     """Check if user already has a booking overlapping this one."""
     new_start = parse_datetime(date, time)
+    if not new_start:
+        return False
     new_end = new_start + dt.timedelta(minutes=duration)
 
     for b in _BOOKINGS.values():
-        if b.user_id != user_id or b.status != "active":
+        if b.user_id != str(user_id) or b.status != "active":
             continue
 
         existing_start = parse_datetime(b.date, b.time)
+        if not existing_start:
+            continue
         existing_end = existing_start + dt.timedelta(minutes=b.duration)
 
-        # Overlap check
         if (new_start < existing_end) and (existing_start < new_end):
             return True
 
     return False
 
+
 AVAILABLE_LANES = [1, 2, 3, 4, 5, 6]
 
-def assign_lane(date, time, duration, booking_type):
+
+def assign_lane(date: str, time: str, duration: int, booking_type: str) -> Optional[int]:
     if booking_type != "لاین تمرین":
-        return None  # no lane needed
-    
+        return None
+
     new_start = parse_datetime(date, time)
+    if not new_start:
+        return None
     new_end = new_start + dt.timedelta(minutes=duration)
 
     for lane in AVAILABLE_LANES:
@@ -307,6 +336,8 @@ def assign_lane(date, time, duration, booking_type):
                 continue
 
             existing_start = parse_datetime(b.date, b.time)
+            if not existing_start:
+                continue
             existing_end = existing_start + dt.timedelta(minutes=b.duration)
 
             if (new_start < existing_end) and (existing_start < new_end):
@@ -319,12 +350,12 @@ def assign_lane(date, time, duration, booking_type):
     return None
 
 
-def get_next_reservation(user_id):
-    future = []
+def get_next_reservation(user_id: str) -> Optional[Booking]:
+    future: List[Tuple[dt.datetime, Booking]] = []
     now = dt.datetime.now()
 
     for b in _BOOKINGS.values():
-        if b.user_id != user_id or b.status != "active":
+        if b.user_id != str(user_id) or b.status != "active":
             continue
         start_dt = parse_datetime(b.date, b.time)
         if start_dt and start_dt > now:
@@ -333,43 +364,43 @@ def get_next_reservation(user_id):
     if not future:
         return None
 
-    # Return booking with earliest date/time
     future.sort(key=lambda x: x[0])
     return future[0][1]
 
-def count_pool_swimmers(date, time, duration):
+
+def count_pool_swimmers(date: str, time: str, duration: int) -> int:
     """Count users with free-swim booking overlapping this interval."""
     new_start = parse_datetime(date, time)
+    if not new_start:
+        return 0
     new_end = new_start + dt.timedelta(minutes=duration)
 
     count = 0
-
     for b in _BOOKINGS.values():
         if b.type != "شنای آزاد" or b.status != "active":
             continue
 
         existing_start = parse_datetime(b.date, b.time)
+        if not existing_start:
+            continue
         existing_end = existing_start + dt.timedelta(minutes=b.duration)
 
-        # Check overlap
         if (new_start < existing_end) and (existing_start < new_end):
             count += 1
 
     return count
 
 
-
 def refresh_booking_statuses():
-    """به‌روزرسانی وضعیت رزروها بر اساس تاریخ/ساعت فعلی.
-
-    - رزروهای active که تاریخ/ساعت‌شان گذشته است → expired
-    - رزروهای cancelled همان‌طور می‌مانند
-    """
-    now = datetime.now()
+    """Update booking.status based on current time."""
     for booking in _BOOKINGS.values():
-        # فقط رزروهای فعال را چک می‌کنیم
         if booking.status == "active" and is_past_booking(booking.date, booking.time):
             booking.status = "expired"
+
+
+# ---------------------------
+# Membership helpers
+# ---------------------------
 
 def activate_membership(
     user: User,
@@ -379,15 +410,13 @@ def activate_membership(
     price: int,
 ) -> MembershipHistoryItem:
     """
-    فعال‌سازی یا تمدید اشتراک:
-      - اگر همان پلن قبلاً فعال است → از تاریخ انقضای فعلی تمدید می‌کنیم.
-      - در غیر این صورت → از امروز شروع می‌شود.
-    یک MembershipHistoryItem جدید ایجاد می‌کند و به history اضافه می‌کند.
+    Activate or extend membership:
+      - If same plan is already active → extend from its current expiration.
+      - Otherwise → start from today.
     """
     now = dt.datetime.now()
     today = now.date()
 
-    # پایه برای تمدید: اگر همین پلن فعال است و منقضی نشده، از expire فعلی شروع کن
     if (
         user.membership_slug == plan_slug
         and user.membership_expires_at
@@ -399,12 +428,11 @@ def activate_membership(
 
     expires_at = start_date + dt.timedelta(days=duration_days)
 
-    # به‌روزرسانی اشتراک فعلی روی خود user
     user.membership_slug = plan_slug
     user.membership_name = plan_name
     user.membership_expires_at = expires_at
 
-    # اتوماتیک کردن expired برای history
+    # Auto mark old active items as expired
     for item in user.membership_history:
         if item.status == "active" and item.expires_at < today:
             item.status = "expired"
@@ -422,12 +450,15 @@ def activate_membership(
     return history_item
 
 
-def cancel_membership(user: User, history_id: str) -> Tuple[bool, str, Optional[MembershipHistoryItem]]:
+def cancel_membership(
+    user: User,
+    history_id: str,
+) -> Tuple[bool, str, Optional[MembershipHistoryItem]]:
     """
-    لغو اشتراک:
-      - فقط اگر رکورد active و تاریخ خرید = امروز باشد.
-      - status → cancelled
-      - اگر این رکورد، اشتراک فعلی user باشد، اشتراک کاربر را خالی می‌کنیم.
+    Cancel membership:
+      - Only if item is active and purchased today.
+      - Marks status as cancelled.
+      - Clears user's current membership if it matches this record.
     """
     today = dt.date.today()
 
@@ -440,20 +471,20 @@ def cancel_membership(user: User, history_id: str) -> Tuple[bool, str, Optional[
 
             item.status = "cancelled"
 
-            # اگر این اشتراک، اشتراک فعلی کاربر است، آن را خالی کن
             if (
                 user.membership_slug == item.plan_slug
                 and user.membership_expires_at == item.expires_at
             ):
-                user.membership_slug = None
-                user.membership_name = None
-                user.membership_expires_at = None
+                user.clear_membership()
 
             return True, "", item
 
     return False, "اشتراک مورد نظر یافت نشد.", None
 
 
+# ---------------------------
+# Class helpers
+# ---------------------------
 
 def enroll_in_class(
     user: User,
@@ -463,10 +494,6 @@ def enroll_in_class(
     time: str,
     price: int,
 ) -> ClassEnrollment:
-    """
-    ثبت‌نام کاربر در یک کلاس.
-    فعلاً محدودیت خاصی (مثلاً یک‌بار ثبت‌نام) اعمال نمی‌کنیم.
-    """
     now = dt.datetime.now()
     enrollment = ClassEnrollment(
         id=str(uuid.uuid4()),
@@ -482,6 +509,10 @@ def enroll_in_class(
     return enrollment
 
 
+# ---------------------------
+# Event helpers (public + wallet)
+# ---------------------------
+
 def register_for_event(
     event_slug: str,
     event_title: str,
@@ -489,14 +520,59 @@ def register_for_event(
     name: str,
     email: str,
 ) -> EventRegistration:
+    """
+    Public/guest registration (or logged-in without wallet payment).
+    Price is assumed 0 here.
+    """
+    # If user_id given but name/email empty, try to pull from user object
+    if user_id and (not name or not email):
+        u = get_user_by_id(user_id)
+        if u:
+            if not name:
+                name = (u.first_name or "") + " " + (u.last_name or "")
+            if not email:
+                email = u.email
+
     reg = EventRegistration(
         id=str(uuid.uuid4()),
         event_slug=event_slug,
-        event_title=event_title,
-        user_id=user_id,
+        title=event_title,
+        user_id=str(user_id) if user_id is not None else None,
         name=name,
         email=email,
-        created_at=dt.datetime.now(),
+        price=0,
+        status="registered",
+    )
+    _EVENT_REGISTRATIONS.append(reg)
+    return reg
+
+
+def create_event_registration(
+    user_id: str,
+    event_slug: str,
+    title: str,
+    price: int,
+) -> EventRegistration:
+    """
+    Wallet-based event registration for authenticated users.
+    Name/email are taken from the user profile when available.
+    """
+    u = get_user_by_id(user_id)
+    if u:
+        name = (u.first_name or "") + " " + (u.last_name or "")
+        email = u.email
+    else:
+        name = ""
+        email = ""
+
+    reg = EventRegistration(
+        id=str(uuid.uuid4()),
+        event_slug=event_slug,
+        title=title,
+        user_id=str(user_id),
+        name=name,
+        email=email,
+        price=price,
         status="registered",
     )
     _EVENT_REGISTRATIONS.append(reg)
@@ -513,34 +589,16 @@ def count_event_registrations(event_slug: str) -> int:
 
 def get_user_event_registrations(user_id: str) -> List[EventRegistration]:
     return [
-        r for r in _EVENT_REGISTRATIONS
-        if r.user_id == user_id
+        r
+        for r in _EVENT_REGISTRATIONS
+        if r.user_id == str(user_id)
     ]
 
-def update_user_email(user: User, new_email: str) -> bool:
-    """
-    Try to update the user's email and keep the _USERS_BY_EMAIL index in sync.
-    Returns True on success, False if email is invalid or already taken.
-    """
-    global _USERS_BY_EMAIL
 
-    email_norm = new_email.lower().strip()
-    if not email_norm:
-        return False
-
-    # No change
-    if email_norm == user.email:
-        return True
-
-    # Already used by someone else?
-    if email_norm in _USERS_BY_EMAIL:
-        return False
-
-    # Update index dict
-    old_email = user.email
-    if old_email in _USERS_BY_EMAIL:
-        del _USERS_BY_EMAIL[old_email]
-
-    user.email = email_norm
-    _USERS_BY_EMAIL[email_norm] = user
-    return True
+def user_is_registered_for_event(user_id: str, event_slug: str) -> bool:
+    return any(
+        r.user_id == str(user_id)
+        and r.event_slug == event_slug
+        and r.status == "registered"
+        for r in _EVENT_REGISTRATIONS
+    )
