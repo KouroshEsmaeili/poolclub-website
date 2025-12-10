@@ -134,7 +134,18 @@ class Booking:
     lane: Optional[int] = None
     status: str = "active"  # active, cancelled, expired
 
-
+# ---------------------------
+# Booking Model
+# ---------------------------
+@dataclass
+class EventRegistration:
+    id: int
+    user_id: int
+    event_slug: str
+    title: str
+    price: int
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    status: str = "registered"  # could later support "cancelled"
 
 
 # ---------------------------
@@ -146,8 +157,38 @@ _BOOKINGS: Dict[str, Booking] = {}
 _BOOKING_COUNTER = 1
 POOL_MAX_CAPACITY = 40
 _EVENT_REGISTRATIONS: List[EventRegistration] = []
+_EVENT_REG_COUNTER = 1
+_EVENT_REGISTRATIONS: list[EventRegistration] = []
 
 
+def create_event_registration(user_id: int, event_slug: str, title: str, price: int) -> EventRegistration:
+    global _EVENT_REG_COUNTER
+    reg = EventRegistration(
+        id=_EVENT_REG_COUNTER,
+        user_id=user_id,
+        event_slug=event_slug,
+        title=title,
+        price=price,
+    )
+    _EVENT_REG_COUNTER += 1
+    _EVENT_REGISTRATIONS.append(reg)
+    return reg
+
+
+def get_user_event_registrations(user_id: int) -> list[EventRegistration]:
+    return [r for r in _EVENT_REGISTRATIONS if r.user_id == user_id]
+
+
+def user_is_registered_for_event(user_id: int, event_slug: str) -> bool:
+    return any(
+        r.user_id == user_id and r.event_slug == event_slug and r.status == "registered"
+        for r in _EVENT_REGISTRATIONS
+    )
+
+
+def count_event_registrations(event_slug: str) -> int:
+    return sum(1 for r in _EVENT_REGISTRATIONS
+               if r.event_slug == event_slug and r.status == "registered")
 
 def create_user(email: str, password: str, first_name: str = "", last_name: str = "") -> User:
     email_norm = email.lower().strip()

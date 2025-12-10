@@ -395,20 +395,27 @@
                 </div>
 
                 {% if e.state == 'open' %}
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-primary js-event-register-btn"
-                    data-slug="{{ e.slug }}"
-                    data-title="{{ e.title }}"
-                    data-price="{{ e.price }}"
-                  >
-                    شرکت در رویداد
-                  </button>
+                  {% if current_user.is_authenticated %}
+                    {# Logged-in → go to dashboard events page #}
+                    <a
+                      class="btn btn-sm btn-primary"
+                      href="{{ url_for('main.user_events') }}#{{ e.slug }}"
+                    >
+                      شرکت در رویداد
+                    </a>
+                  {% else %}
+                    {# Visitor → go to login, then redirect to dashboard events #}
+                    <a
+                      class="btn btn-sm btn-primary"
+                      href="{{ url_for('auth.login', next=url_for('main.user_events')) }}"
+                    >
+                      شرکت در رویداد
+                    </a>
+                  {% endif %}
                 {% endif %}
               </div>
             </div>
-
-
+            
           </div>
         </div>
       </div>

@@ -21,6 +21,10 @@ from .model import (
     register_for_event,
     count_event_registrations,
     get_user_event_registrations,
+    count_event_registrations,
+    user_is_registered_for_event,
+    get_user_event_registrations,
+    create_event_registration,
 )
 from .swimcloud_scraper import fetch_swimcloud_rankings
 
@@ -74,6 +78,8 @@ def index():
         slug = e.get("slug")
         if slug:
             e["registered_count"] = count_event_registrations(slug)
+            if current_user.is_authenticated:
+                e["user_registered"] = user_is_registered_for_event(current_user.id, slug)
 
     ratings = load_json('ratings.json')  
     prices = load_json('prices.json')
@@ -253,6 +259,31 @@ def membership_cancel():
 
     flash("اشتراک با موفقیت لغو شد و مبلغ به کیف پول بازگشت.", "success")
     return redirect(url_for("main.membership"))
+
+@main.route("/dashboard/events")
+@login_required
+def user_events():
+    site = load_json("site.json")
+
+    raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
+    events = sorted(raw_events, key=parse_date)
+
+    # annotate events with counts + user registration info
+    for e in events:
+        slug = e.get("slug")
+        if not slug:
+            continue
+        e["registered_count"] = count_event_registrations(slug)
+        e["user_registered"] = user_is_registered_for_event(current_user.id, slug)
+
+    my_regs = get_user_event_registrations(current_user.id)
+
+    return render_template(
+        "user/events.html",   # new template
+        site=site,
+        events=events,
+        registrations=my_regs,
+    )
 
 
 @main.route("/api/wallet/deposit", methods=["POST"])
@@ -599,3 +630,87 @@ def api_events_register():
         "message": f"ثبت‌نام شما برای رویداد «{title}» با موفقیت ثبت شد.",
         "registration_id": reg.id,
     }), 201
+
+
+def _parse_price_to_int(price_str: str | None) -> int:
+    """
+    Very simple parser: keeps digits only, e.g. '150,000 تومان' -> 150000.
+    Returns 0 if empty or invalid.
+    """
+    if not price_str:
+        return 0
+    digits = re.sub(r"[^\d]", "", str(price_str))
+    try:
+        return int(digits) if digits else 0
+    except ValueError:
+        return 0
+
+
+@main.route("/api/events/register", methods=["POST"])
+@login_required
+def api_event_register():
+    data = request.get_json(silent=True) or {}
+    slug = (data.get("slug") or "").strip()
+
+    if not slug:
+        return jsonify({"status": "error", "message": "شناسه رویداد ارسال نشده است."}), 400
+
+    raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
+    event = next((e for e in raw_events if e.get("slug") == slug), None)
+    if not event:
+        return jsonify({"status": "error", "message": "رویداد یافت نشد."}), 404
+
+    if event.get("state") != "open":
+        return jsonify({"status": "error", "message": "ثبت‌نام این رویداد فعال نیست."}), 409
+
+    # ظرفیت (اختیاری)
+    capacity = event.get("capacity")
+    current_count = count_event_registrations(slug)
+    if capacity is not None:
+        try:
+            capacity_int = int(capacity)
+            if current_count >= capacity_int:
+                return jsonify({
+                    "status": "error",
+                    "message": "ظرفیت این رویداد تکمیل شده است."
+                }), 409
+        except (TypeError, ValueError):
+            pass  # اگر capacity خراب بود، نادیده می‌گیریم
+
+    # کاربر قبلاً ثبت‌نام کرده؟
+    if user_is_registered_for_event(current_user.id, slug):
+        return jsonify({
+            "status": "error",
+            "message": "شما قبلاً در این رویداد ثبت‌نام کرده‌اید."
+        }), 409
+
+    # مبلغ
+    price_str = event.get("price")
+    amount = _parse_price_to_int(price_str)
+    title = event.get("title") or "رویداد"
+
+    # اگر پولی است، از کیف پول کم کن
+    if amount > 0:
+        if not current_user.charge(amount, description=f"ثبت‌نام رویداد: {title}"):
+            return jsonify({
+                "status": "error",
+                "message": "موجودی کیف پول کافی نیست."
+            }), 402
+
+    # ثبت در حافظه
+    reg = create_event_registration(
+        user_id=current_user.id,
+        event_slug=slug,
+        title=title,
+        price=amount,
+    )
+
+    new_count = count_event_registrations(slug)
+
+    return jsonify({
+        "status": "success",
+        "message": "ثبت‌نام در رویداد با موفقیت انجام شد.",
+        "registration_id": reg.id,
+        "new_balance": current_user.wallet_balance,
+        "registered_count": new_count,
+    })

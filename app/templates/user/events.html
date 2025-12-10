@@ -1,0 +1,168 @@
+{% extends "dashboard_base.html" %}
+{% block title %}رویدادها | {{ site.brand }}{% endblock %}
+
+{% block content %}
+
+<div class="topbar d-flex justify-content-between align-items-center">
+  <h3 class="m-0">رویدادها و برنامه‌های ویژه</h3>
+  <a href="{{ url_for('main.user_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    بازگشت به داشبورد
+  </a>
+</div>
+
+<div class="container-fluid">
+  <div class="row gy-4">
+
+    <!-- لیست رویدادها -->
+    <div class="col-lg-8">
+      <div class="row">
+        {% for e in events %}
+        <div class="col-md-6 mb-4">
+          <div class="card h-100 shadow-sm">
+            {% if e.image %}
+            <img src="{{ url_for('static', filename=e.image) }}"
+                 class="card-img-top"
+                 alt="{{ e.title }}">
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+              <div class="small text-muted mb-2 d-flex justify-content-between">
+                <span><i class="far fa-calendar-alt ms-1"></i>{{ e.date }}</span>
+                <span><i class="far fa-clock ms-1"></i>{{ e.time }}</span>
+              </div>
+
+              <h5 class="card-title mb-2">{{ e.title }}</h5>
+              <p class="card-text text-muted small mb-2">
+                {{ e.description }}
+              </p>
+
+              <ul class="list-unstyled small text-muted mb-3">
+                {% if e.audience %}
+                  <li>مخاطب: {{ e.audience }}</li>
+                {% endif %}
+                {% if e.price %}
+                  <li>هزینه: {{ e.price }}</li>
+                {% endif %}
+                {% if e.registered_count is defined %}
+                  <li class="text-info">
+                    ثبت‌نام شده تا این لحظه: {{ e.registered_count }} نفر
+                  </li>
+                {% endif %}
+              </ul>
+
+              <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                <div>
+                  {% if e.state == "open" %}
+                    <span class="badge bg-success">ثبت‌نام باز</span>
+                  {% elif e.state == "full" %}
+                    <span class="badge bg-secondary">ظرفیت تکمیل</span>
+                  {% else %}
+                    <span class="badge bg-dark">اطلاعات تکمیلی</span>
+                  {% endif %}
+                </div>
+
+                <div class="d-flex flex-wrap gap-1">
+                  {% if e.tags %}
+                    {% for tag in e.tags %}
+                      <span class="badge bg-outline-secondary border text-secondary">{{ tag }}</span>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="mt-3 d-flex justify-content-between align-items-center">
+                {% if e.user_registered %}
+                  <span class="text-success small">
+                    شما در این رویداد ثبت‌نام کرده‌اید.
+                  </span>
+                {% elif e.state == "open" %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary js-event-register-btn"
+                    data-slug="{{ e.slug }}"
+                    data-title="{{ e.title }}"
+                    data-price="{{ e.price or '' }}"
+                  >
+                    ثبت‌نام با کیف پول
+                  </button>
+                {% endif %}
+              </div>
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- کارت خلاصه ثبت‌نام‌های من -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">ثبت‌نام‌های من</h5>
+
+          {% if registrations %}
+            <ul class="list-group list-group-flush">
+              {% for r in registrations %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-bold">{{ r.title }}</div>
+                  <div class="small text-muted">
+                    شناسه: {{ r.id }} –
+                    {{ r.timestamp.strftime("%Y-%m-%d %H:%M") }}
+                  </div>
+                </div>
+                <span class="badge bg-primary">{{ r.price }} تومان</span>
+              </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-0">
+              هنوز در هیچ رویدادی ثبت‌نام نکرده‌اید.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function registerForEvent(slug) {
+  fetch("/api/events/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug: slug })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "success") {
+      // ساده: رفرش صفحه تا وضعیت و موجودی بروز شود
+      location.reload();
+    } else {
+      alert(data.message || "خطا در ثبت‌نام رویداد");
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("خطا در ارتباط با سرور");
+  });
+}
+
+document.querySelectorAll(".js-event-register-btn").forEach(btn => {
+  btn.addEventListener("click", function () {
+    const slug = this.dataset.slug;
+    const title = this.dataset.title;
+    if (!slug) return;
+
+    if (!confirm(`ثبت‌نام در رویداد:\n«${title}» ؟`)) {
+      return;
+    }
+    registerForEvent(slug);
+  });
+});
+</script>
+{% endblock %}
