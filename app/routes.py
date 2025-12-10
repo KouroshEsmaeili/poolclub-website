@@ -25,6 +25,7 @@ from .model import (
     user_is_registered_for_event,
     get_user_event_registrations,
     create_event_registration,
+    update_user_email
 )
 from .swimcloud_scraper import fetch_swimcloud_rankings
 
@@ -284,6 +285,85 @@ def user_events():
         events=events,
         registrations=my_regs,
     )
+
+@main.route("/dashboard/profile", methods=["GET", "POST"])
+@login_required
+def profile_settings():
+    site = load_json("site.json")
+    user = current_user
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip()
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+
+        # Optional fields
+        phone = (request.form.get("phone") or "").strip()
+        birthdate = (request.form.get("birthdate") or "").strip()
+        emergency_contact = (request.form.get("emergency_contact") or "").strip()
+
+        errors = []
+
+        # Required fields
+        if not email:
+            errors.append("ایمیل الزامی است.")
+        if not first_name:
+            errors.append("نام الزامی است.")
+        if not last_name:
+            errors.append("نام خانوادگی الزامی است.")
+
+        # Password change (optional)
+        current_password = (request.form.get("current_password") or "").strip()
+        new_password = (request.form.get("new_password") or "").strip()
+        new_password2 = (request.form.get("new_password2") or "").strip()
+
+        if new_password or new_password2 or current_password:
+            # User is trying to change password
+            if not current_password:
+                errors.append("برای تغییر رمز عبور، وارد کردن رمز فعلی الزامی است.")
+            elif not user.check_password(current_password):
+                errors.append("رمز عبور فعلی نادرست است.")
+            elif new_password != new_password2:
+                errors.append("تکرار رمز عبور جدید هم‌خوانی ندارد.")
+            elif len(new_password) < 6:
+                errors.append("طول رمز عبور جدید باید حداقل ۶ کاراکتر باشد.")
+
+        if errors:
+            for e in errors:
+                flash(e, "danger")
+            # Re-render with current form values
+            return render_template(
+                "user/profile.html",
+                site=site,
+                user=user,
+            )
+
+        # Update email (with uniqueness check)
+        if email != user.email:
+            if not update_user_email(user, email):
+                flash("این ایمیل قبلاً ثبت شده است یا نامعتبر است.", "danger")
+                return render_template(
+                    "user/profile.html",
+                    site=site,
+                    user=user,
+                )
+
+        # Update basic profile fields
+        user.first_name = first_name
+        user.last_name = last_name
+        user.phone = phone
+        user.birthdate = birthdate
+        user.emergency_contact = emergency_contact
+
+        # Update password if requested
+        if new_password:
+            user.password_hash = generate_password_hash(new_password)
+
+        flash("تنظیمات پروفایل با موفقیت ذخیره شد.", "success")
+        return redirect(url_for("main.profile_settings"))
+
+    # GET
+    return render_template("user/profile.html", site=site, user=user)
 
 
 @main.route("/api/wallet/deposit", methods=["POST"])

@@ -79,6 +79,11 @@ class User(UserMixin):
     membership_expires_at: Optional[dt.date] = None
     membership_history: List[MembershipHistoryItem] = field(default_factory=list)
 
+    phone: str = ""
+    birthdate: str = ""           # e.g. "2000-01-01"
+    emergency_contact: str = ""   # e.g. phone or name+phone
+
+
     # Classes
     class_enrollments: List[ClassEnrollment] = field(default_factory=list)
 
@@ -512,3 +517,30 @@ def get_user_event_registrations(user_id: str) -> List[EventRegistration]:
         if r.user_id == user_id
     ]
 
+def update_user_email(user: User, new_email: str) -> bool:
+    """
+    Try to update the user's email and keep the _USERS_BY_EMAIL index in sync.
+    Returns True on success, False if email is invalid or already taken.
+    """
+    global _USERS_BY_EMAIL
+
+    email_norm = new_email.lower().strip()
+    if not email_norm:
+        return False
+
+    # No change
+    if email_norm == user.email:
+        return True
+
+    # Already used by someone else?
+    if email_norm in _USERS_BY_EMAIL:
+        return False
+
+    # Update index dict
+    old_email = user.email
+    if old_email in _USERS_BY_EMAIL:
+        del _USERS_BY_EMAIL[old_email]
+
+    user.email = email_norm
+    _USERS_BY_EMAIL[email_norm] = user
+    return True
