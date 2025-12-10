@@ -7,11 +7,9 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 
-
 # ---------------------------
 # Wallet Transaction Model
 # ---------------------------
-
 @dataclass
 class WalletTransaction:
     amount: int
@@ -45,11 +43,24 @@ class ClassEnrollment:
     status: str = "active"  # active, cancelled
 
 
+# ---------------------------
+# Class Event Registration
+# ---------------------------
+@dataclass
+class EventRegistration:
+    id: str
+    event_slug: str
+    event_title: str
+    user_id: Optional[str]
+    name: str
+    email: str
+    created_at: dt.datetime
+    status: str = "registered"  # registered, cancelled
+
 
 # ---------------------------
 # User Model
 # ---------------------------
-
 @dataclass
 class User(UserMixin):
     id: str
@@ -110,11 +121,33 @@ class User(UserMixin):
         self.membership_expires_at = None
 
 # ---------------------------
+# Booking Model
+# ---------------------------
+@dataclass
+class Booking:
+    id: str
+    user_id: str
+    date: str
+    time: str
+    duration: int
+    type: str  # مثل: "آزاد", "لاین تمرین", "کلاس"
+    lane: Optional[int] = None
+    status: str = "active"  # active, cancelled, expired
+
+
+
+
+# ---------------------------
 # TEMPORARY In-Memory Storage
 # ---------------------------
-
 _USERS_BY_ID: Dict[str, User] = {}
 _USERS_BY_EMAIL: Dict[str, User] = {}
+_BOOKINGS: Dict[str, Booking] = {}
+_BOOKING_COUNTER = 1
+POOL_MAX_CAPACITY = 40
+_EVENT_REGISTRATIONS: List[EventRegistration] = []
+
+
 
 def create_user(email: str, password: str, first_name: str = "", last_name: str = "") -> User:
     email_norm = email.lower().strip()
@@ -148,29 +181,6 @@ def get_user_by_id(user_id: str) -> Optional[User]:
 if not _USERS_BY_EMAIL:
     create_user("test", "123456", first_name="کاربر", last_name="آزمایشی")
 
-
-# ---------------------------
-# Booking Model
-# ---------------------------
-@dataclass
-class Booking:
-    id: str
-    user_id: str
-    date: str
-    time: str
-    duration: int
-    type: str  # مثل: "آزاد", "لاین تمرین", "کلاس"
-    lane: Optional[int] = None
-    status: str = "active"  # active, cancelled, expired
-
-
-
-# ---------------------------
-# TEMPORARY In-Memory Storage
-# ---------------------------
-_BOOKINGS: Dict[str, Booking] = {}
-_BOOKING_COUNTER = 1
-POOL_MAX_CAPACITY = 40
 
 def create_booking(user_id, date, time, duration, booking_type, lane=None):
     global _BOOKING_COUNTER
@@ -396,6 +406,9 @@ def cancel_membership(user: User, history_id: str) -> Tuple[bool, str, Optional[
             return True, "", item
 
     return False, "اشتراک مورد نظر یافت نشد.", None
+
+
+
 def enroll_in_class(
     user: User,
     class_slug: str,
@@ -421,3 +434,40 @@ def enroll_in_class(
     )
     user.class_enrollments.append(enrollment)
     return enrollment
+
+
+def register_for_event(
+    event_slug: str,
+    event_title: str,
+    user_id: Optional[str],
+    name: str,
+    email: str,
+) -> EventRegistration:
+    reg = EventRegistration(
+        id=str(uuid.uuid4()),
+        event_slug=event_slug,
+        event_title=event_title,
+        user_id=user_id,
+        name=name,
+        email=email,
+        created_at=dt.datetime.now(),
+        status="registered",
+    )
+    _EVENT_REGISTRATIONS.append(reg)
+    return reg
+
+
+def count_event_registrations(event_slug: str) -> int:
+    return sum(
+        1
+        for r in _EVENT_REGISTRATIONS
+        if r.event_slug == event_slug and r.status == "registered"
+    )
+
+
+def get_user_event_registrations(user_id: str) -> List[EventRegistration]:
+    return [
+        r for r in _EVENT_REGISTRATIONS
+        if r.user_id == user_id
+    ]
+

@@ -18,7 +18,9 @@ from .model import (
     activate_membership,
     cancel_membership,
     enroll_in_class,
-
+    register_for_event,
+    count_event_registrations,
+    get_user_event_registrations,
 )
 from .swimcloud_scraper import fetch_swimcloud_rankings
 
@@ -67,7 +69,12 @@ def index():
 
     raw_events = [e for e in load_json('events.json') if e.get('status') == 'published']
     events = sorted(raw_events, key=parse_date)
-    
+
+    for e in events:
+        slug = e.get("slug")
+        if slug:
+            e["registered_count"] = count_event_registrations(slug)
+
     ratings = load_json('ratings.json')  
     prices = load_json('prices.json')
 
@@ -546,3 +553,49 @@ def user_classes():
         classes=classes_cfg,     
         my_classes=my_classes,
     )
+
+@main.route("/api/events/register", methods=["POST"])
+def api_events_register():
+    data = request.get_json(silent=True) or {}
+    event_slug = (data.get("event_slug") or "").strip()
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if not event_slug:
+        return jsonify({"status": "error", "message": "رویداد نامعتبر است."}), 400
+
+    event_cfg = find_event_by_slug(event_slug)
+    if not event_cfg:
+        return jsonify({"status": "error", "message": "رویداد یافت نشد."}), 404
+
+    # اگر کاربر لاگین است، نام و ایمیل را از پروفایل می‌گیریم (در صورت نبود در body)
+    if current_user.is_authenticated:
+        if not name:
+            name = (current_user.first_name or "") + " " + (current_user.last_name or "")
+        if not email:
+            email = current_user.email
+
+    # برای مهمان‌ها: حداقل ایمیل و نام لازم است
+    if not name or not email:
+        return jsonify({
+            "status": "error",
+            "message": "لطفاً نام و ایمیل خود را وارد کنید."
+        }), 400
+
+    title = event_cfg.get("title", "")
+    user_id = current_user.id if current_user.is_authenticated else None
+
+    # در این فاز، پرداخت واقعی انجام نمی‌دهیم؛ فقط ثبت‌نام را ذخیره می‌کنیم
+    reg = register_for_event(
+        event_slug=event_slug,
+        event_title=title,
+        user_id=user_id,
+        name=name,
+        email=email,
+    )
+
+    return jsonify({
+        "status": "success",
+        "message": f"ثبت‌نام شما برای رویداد «{title}» با موفقیت ثبت شد.",
+        "registration_id": reg.id,
+    }), 201

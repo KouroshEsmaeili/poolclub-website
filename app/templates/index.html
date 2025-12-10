@@ -55,7 +55,7 @@
     <div class="row gx-4 gx-lg-5 mb-5">
       {% for f in pools.pools %}
         <div class="col-md-6 col-lg-4 mb-4">
-          <div class="card h-100 shadow-sm">
+          <div class="card h-100 shadow-sm card-hover">
             {% if f.image %}
               <div class="facility-image-wrapper">
                 <img src="{{ url_for('static', filename=f.image) }}" class="card-img-top" alt="{{ f.name }}">
@@ -118,7 +118,7 @@
       <div class="row gx-4 gx-lg-5 mb-5">
         {% for f in cat['items'] %}
           <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm">
+            <div class="card h-100 shadow-sm card-hover">
               {% if f.image %}
                 <div class="facility-image-wrapper">
                   <img src="{{ url_for('static', filename=f.image) }}" class="card-img-top" alt="{{ f.name }}">
@@ -217,7 +217,7 @@
         {% for c in cat['items'] %}
           <div class="col-md-6 col-lg-4 mb-4">
             <div
-              class="class-card h-100 shadow-sm"
+              class="class-card card h-100 shadow-sm card-hover"
               role="button"
               tabindex="0"
               data-slug="{{ c.slug }}"
@@ -230,42 +230,43 @@
               data-description="{{ c.description }}"
             >
 
-            <div class="class-img-wrapper">
-              <img src="{{ url_for('static', filename=c.image) }}" alt="{{ c.name }}">
-              <div class="class-img-overlay"></div>
-            </div>
-
-            <div class="card-body d-flex flex-column">
-              <h5 class="card-title mb-2">{{ c.name }}</h5>
-              <p class="card-text text-muted">{{ c.description }}</p>
-
-              <ul class="list-unstyled small text-muted mb-3">
-                <li>مربی: {{ c.coach }}</li>
-                <li>زمان: {{ c.time }}</li>
-                <li>ظرفیت: {{ c.capacity }} نفر</li>
-                <li>هزینه: {{ c.price }}</li>
-              </ul>
-
-              <div class="mt-auto">
-                {% if c.tags %}
-                  {% for tag in c.tags %}
-                    <span class="badge bg-info text-dark ms-1">{{ tag }}</span>
-                  {% endfor %}
-                {% endif %}
-                <p class="small text-primary fw-semibold mt-3 mb-0">
-                  برای جزئیات و ثبت‌نام روی کارت کلیک کنید.
-                </p>
+              <div class="class-img-wrapper">
+                <img src="{{ url_for('static', filename=c.image) }}" alt="{{ c.name }}">
+                <div class="class-img-overlay"></div>
               </div>
-            </div>
 
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-2">{{ c.name }}</h5>
+                <p class="card-text text-muted">{{ c.description }}</p>
+
+                <ul class="list-unstyled small text-muted mb-3">
+                  <li>مربی: {{ c.coach }}</li>
+                  <li>زمان: {{ c.time }}</li>
+                  <li>ظرفیت: {{ c.capacity }} نفر</li>
+                  <li>هزینه: {{ c.price }}</li>
+                </ul>
+
+                <div class="mt-auto">
+                  {% if c.tags %}
+                    {% for tag in c.tags %}
+                      <span class="badge bg-info text-dark ms-1">{{ tag }}</span>
+                    {% endfor %}
+                  {% endif %}
+                  <p class="small text-primary fw-semibold mt-3 mb-0">
+                    برای جزئیات و ثبت‌نام روی کارت کلیک کنید.
+                  </p>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
         {% endfor %}
       </div>
     {% endfor %}
 
   </div>
 </section>
+
 
 <!-- Modal: جزئیات کلاس -->
 <div class="modal fade" id="classDetailModal" tabindex="-1" aria-labelledby="classDetailModalLabel" aria-hidden="true">
@@ -323,7 +324,7 @@
     <div class="row gx-4 gx-lg-5">
       {% for e in events %}
       <div class="col-md-6 col-lg-4 mb-4">
-        <div class="event-card h-100 shadow-sm">
+        <div class="event-card h-100 shadow-sm card-hover">
 
           {% if e.image %}
           <div class="event-img-wrapper">
@@ -363,33 +364,57 @@
               {% if e.price %}
                 <li>هزینه: {{ e.price }}</li>
               {% endif %}
+
+              {% if e.registered_count is defined %}
+                <li class="text-info">
+                  ثبت‌نام شده تا این لحظه: {{ e.registered_count }} نفر
+                </li>
+              {% endif %}
             </ul>
 
-            <!-- وضعیت و تگ‌ها -->
-            <div class="mt-auto d-flex flex-wrap align-items-center justify-content-between gap-2">
-              {% if e.state == 'open' %}
-                <span class="badge bg-success">ثبت‌نام باز</span>
-              {% elif e.state == 'full' %}
-                <span class="badge bg-secondary">ظرفیت تکمیل</span>
-              {% else %}
-                <span class="badge bg-dark">اطلاعات تکمیلی</span>
-              {% endif %}
 
-              <div class="d-flex flex-wrap">
-                {% if e.tags %}
-                  {% for tag in e.tags %}
-                    <span class="badge bg-outline-secondary border text-secondary ms-1 mb-1">{{ tag }}</span>
-                  {% endfor %}
+            <!-- وضعیت و تگ‌ها + دکمه ثبت‌نام -->
+            <div class="mt-auto d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div>
+                {% if e.state == 'open' %}
+                  <span class="badge bg-success">ثبت‌نام باز</span>
+                {% elif e.state == 'full' %}
+                  <span class="badge bg-secondary">ظرفیت تکمیل</span>
+                {% else %}
+                  <span class="badge bg-dark">اطلاعات تکمیلی</span>
+                {% endif %}
+              </div>
+
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex flex-wrap">
+                  {% if e.tags %}
+                    {% for tag in e.tags %}
+                      <span class="badge bg-outline-secondary border text-secondary ms-1 mb-1">{{ tag }}</span>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+
+                {% if e.state == 'open' %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary js-event-register-btn"
+                    data-slug="{{ e.slug }}"
+                    data-title="{{ e.title }}"
+                    data-price="{{ e.price }}"
+                  >
+                    شرکت در رویداد
+                  </button>
                 {% endif %}
               </div>
             </div>
+
 
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
-
+    
   </div>
 </section>
 
@@ -417,7 +442,7 @@
       <div class="row">
         <!-- Men table -->
         <div class="col-lg-6 mb-4">
-          <div class="card h-100 shadow-sm">
+          <div class="card h-100 shadow-sm card-hover">
             <div class="card-header bg-dark text-white text-center">
               <h5 class="mb-0">مردان (Men)</h5>
             </div>
@@ -458,7 +483,7 @@
 
         <!-- Women table -->
         <div class="col-lg-6 mb-4">
-          <div class="card h-100 shadow-sm">
+          <div class="card h-100 shadow-sm card-hover">
             <div class="card-header bg-dark text-white text-center">
               <h5 class="mb-0">زنان (Women)</h5>
             </div>
@@ -589,4 +614,64 @@
 
 
 {% include "partials/booking_modal.html" %}
+
+<!-- Event Registration Modal -->
+<div class="modal fade" id="eventRegisterModal" tabindex="-1" aria-labelledby="eventRegisterLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="eventRegisterLabel">ثبت‌نام در رویداد</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <div id="eventRegisterMessage" class="alert d-none mb-3"></div>
+
+        <p class="small mb-3">
+          رویداد انتخاب‌شده:
+          <strong id="eventRegisterTitle"></strong>
+        </p>
+
+        <form id="eventRegisterForm">
+          <input type="hidden" name="event_slug" id="eventRegisterSlug">
+
+          <div class="mb-3">
+            <label class="form-label">نام و نام خانوادگی</label>
+            <input
+              type="text"
+              class="form-control"
+              name="name"
+              id="eventRegisterName"
+              placeholder="مثلاً: علی رضایی"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">ایمیل</label>
+            <input
+              type="email"
+              class="form-control"
+              name="email"
+              id="eventRegisterEmail"
+              placeholder="you@example.com"
+              required
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100" id="eventRegisterSubmit">
+            تأیید ثبت‌نام
+          </button>
+        </form>
+
+        <p class="small text-muted mt-3 mb-0">
+          در این مرحله پرداخت آنلاین فعال نیست و ثبت‌نام به‌صورت رزرو اولیه انجام می‌شود.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 {% endblock %}

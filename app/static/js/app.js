@@ -352,3 +352,104 @@ document.addEventListener("DOMContentLoaded", function () {
   // Refresh every 60 seconds
   setInterval(refreshRankings, 60000);
 });
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  // --- Event registration (landing page) ---
+  const eventModalEl = document.getElementById("eventRegisterModal");
+  const eventTitleEl = document.getElementById("eventRegisterTitle");
+  const eventSlugInput = document.getElementById("eventRegisterSlug");
+  const eventNameInput = document.getElementById("eventRegisterName");
+  const eventEmailInput = document.getElementById("eventRegisterEmail");
+  const eventForm = document.getElementById("eventRegisterForm");
+  const eventMsg = document.getElementById("eventRegisterMessage");
+  const eventSubmitBtn = document.getElementById("eventRegisterSubmit");
+
+  function showEventMessage(type, text) {
+    if (!eventMsg) return;
+    eventMsg.classList.remove("d-none", "alert-success", "alert-danger");
+    eventMsg.classList.add("alert-" + type);
+    eventMsg.textContent = text;
+  }
+
+  function clearEventMessage() {
+    if (!eventMsg) return;
+    eventMsg.classList.add("d-none");
+    eventMsg.textContent = "";
+  }
+
+  // Attach click handler to "شرکت در رویداد" buttons
+  document.querySelectorAll(".js-event-register-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      const slug = this.dataset.slug || "";
+      const title = this.dataset.title || "";
+
+      if (eventSlugInput) eventSlugInput.value = slug;
+      if (eventTitleEl) eventTitleEl.textContent = title;
+
+      clearEventMessage();
+      if (eventForm) eventForm.reset();
+
+      // Optional: if you want, prefill name/email for logged-in user
+      // You can render data attributes from Jinja if needed.
+
+      if (eventModalEl && typeof bootstrap !== "undefined") {
+        const modal = bootstrap.Modal.getOrCreateInstance(eventModalEl);
+        modal.show();
+      }
+    });
+  });
+
+  if (eventForm) {
+    eventForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      clearEventMessage();
+
+      const slug = eventSlugInput ? eventSlugInput.value.trim() : "";
+      const name = eventNameInput ? eventNameInput.value.trim() : "";
+      const email = eventEmailInput ? eventEmailInput.value.trim() : "";
+
+      if (!slug) {
+        showEventMessage("danger", "رویداد نامعتبر است.");
+        return;
+      }
+      if (!name || !email) {
+        showEventMessage("danger", "لطفاً نام و ایمیل خود را وارد کنید.");
+        return;
+      }
+
+      if (eventSubmitBtn) {
+        eventSubmitBtn.disabled = true;
+        eventSubmitBtn.textContent = "در حال ثبت...";
+      }
+
+      fetch("/api/events/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_slug: slug, name, email })
+      })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(({ status, body }) => {
+          if (eventSubmitBtn) {
+            eventSubmitBtn.disabled = false;
+            eventSubmitBtn.textContent = "تأیید ثبت‌نام";
+          }
+
+          if (body.status === "error" || status >= 400) {
+            showEventMessage("danger", body.message || "خطا در ثبت‌نام رویداد.");
+            return;
+          }
+
+          showEventMessage("success", body.message || "ثبت‌نام با موفقیت انجام شد.");
+        })
+        .catch(err => {
+          console.error(err);
+          if (eventSubmitBtn) {
+            eventSubmitBtn.disabled = false;
+            eventSubmitBtn.textContent = "تأیید ثبت‌نام";
+          }
+          showEventMessage("danger", "خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.");
+        });
+    });
+  }
+});

@@ -11455,3 +11455,221 @@ body {
 #mainNav .nav-link-dark {
     color: #111111 !important;
 }
+/* =========================
+   Shared hover card behavior
+   ========================= */
+.card-hover,
+.class-card,
+.event-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+  border: 1px solid rgba(15, 27, 43, 0.06);
+  background-color: #ffffff;
+}
+
+.card-hover:hover,
+.class-card:hover,
+.event-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 1.5rem 3rem rgba(15, 27, 43, 0.18);
+  border-color: rgba(25, 135, 84, 0.35); /* subtle accent */
+}
+
+/* Title + text subtle emphasis on hover */
+.card-hover:hover .card-title,
+.class-card:hover .card-title,
+.event-card:hover .card-title {
+  color: #198754; /* Bootstrap success green */
+}
+
+.card-hover:hover .card-text,
+.class-card:hover .card-text,
+.event-card:hover .card-text {
+  color: #495057;
+}
+
+/* =========================
+   Image wrappers – zoom on hover
+   ========================= */
+.facility-image-wrapper,
+.class-img-wrapper,
+.event-img-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.facility-image-wrapper img,
+.class-img-wrapper img,
+.event-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+/* gradient overlay if not already strong enough */
+.facility-image-overlay,
+.class-img-overlay,
+.event-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.45),
+    rgba(0, 0, 0, 0.1)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* On hover: zoom image + show overlay */
+.card-hover:hover .facility-image-wrapper img,
+.class-card:hover .class-img-wrapper img,
+.event-card:hover .event-img-wrapper img {
+  transform: scale(1.06);
+}
+
+.card-hover:hover .facility-image-overlay,
+.class-card:hover .class-img-overlay,
+.event-card:hover .event-img-overlay {
+  opacity: 1;
+}
+
+/* =========================
+   Badges & buttons inside cards
+   ========================= */
+.card-hover .badge,
+.class-card .badge,
+.event-card .badge {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.card-hover:hover .badge,
+.class-card:hover .badge,
+.event-card:hover .badge {
+  transform: translateY(-1px);
+  box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.18);
+}
+
+/* Primary action buttons full width on small screens */
+.card-hover .btn-sm.w-100,
+.class-card .btn-sm.w-100,
+.event-card .btn-sm.w-100 {
+  border-radius: 999px;
+}
+
+/* Slight padding adjustment for card bodies */
+.card-hover .card-body,
+.class-card .card-body,
+.event-card .card-body {
+  padding: 1.1rem 1.1rem 1.1rem;
+}
+.masthead .btn.btn-primary {
+  border-radius: 999px;
+  padding: 0.75rem 2.5rem;
+  font-weight: 600;
+  box-shadow: 0 0.75rem 1.75rem rgba(13, 110, 253, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.masthead .btn.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1.25rem 2.5rem rgba(13, 110, 253, 0.55);
+}
+
+
+/* =========================
+   Classes grid – tidy cards
+   ========================= */
+
+/* Outer card behavior (you already use card-hover) */
+.class-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* Fixed-height image area for classes */
+.class-img-wrapper {
+  position: relative;
+  height: 210px;           /* adjust 190–240px based on your taste */
+  overflow: hidden;
+}
+
+/* Make all class images fill the same box */
+.class-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* keeps aspect ratio, crops overflow */
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.class-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.45),
+    rgba(0, 0, 0, 0.1)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* On hover: zoom + overlay */
+.class-card:hover .class-img-wrapper img {
+  transform: scale(1.06);
+}
+
+.class-card:hover .class-img-overlay {
+  opacity: 1;
+}
+
+/* Card body spacing & text rhythm */
+.class-card .card-body {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.class-card .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.class-card .card-text {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+/* List spacing inside cards */
+.class-card ul {
+  margin-bottom: 0.75rem;
+}
+
+/* Tag badges alignment */
+.class-card .badge {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Hover elevation (if not already added) */
+.card-hover {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+  border: 1px solid rgba(15, 27, 43, 0.06);
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 1.5rem 3rem rgba(15, 27, 43, 0.16);
+  border-color: rgba(25, 135, 84, 0.3);
+}
