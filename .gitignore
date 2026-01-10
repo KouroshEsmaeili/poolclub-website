@@ -209,3 +209,5 @@ __marimo__/
 */static/assets/img
 /node_modules
 /app/static/css/styles.src.css
+/migrations
+*.db

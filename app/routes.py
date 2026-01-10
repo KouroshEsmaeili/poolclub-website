@@ -19,6 +19,7 @@ from flask import (
 from flask_login import current_user, login_required
 from werkzeug.security import generate_password_hash
 
+from . import db
 from .model import (
     POOL_MAX_CAPACITY,
     activate_membership,
@@ -49,6 +50,7 @@ main = Blueprint("main", __name__)
 # ---------------------------------------------------------------------------
 # Helpers / utilities
 # ---------------------------------------------------------------------------
+
 
 def load_json(name: str):
     """
@@ -147,6 +149,7 @@ def _parse_price_to_int(price_str: str | None) -> int:
 # Template context
 # ---------------------------------------------------------------------------
 
+
 @main.app_context_processor
 def inject_site():
     """
@@ -163,6 +166,7 @@ def inject_site():
 # ---------------------------------------------------------------------------
 # Public pages
 # ---------------------------------------------------------------------------
+
 
 @main.route("/")
 def index():
@@ -205,6 +209,7 @@ def index():
 # Dashboard / user pages
 # ---------------------------------------------------------------------------
 
+
 @main.route("/dashboard")
 @login_required
 def user_dashboard():
@@ -240,7 +245,7 @@ def user_dashboard():
 @login_required
 def wallet():
     user = current_user
-    transactions = user.wallet_transactions[::-1]  # newest first
+    transactions = list(user.wallet_transactions)[::-1]  # newest first
     return render_template(
         "user/wallet.html",
         user=user,
@@ -258,9 +263,13 @@ def membership():
 
     # Update expired memberships on the fly
     today = dt.date.today()
+    changed = False
     for item in user.membership_history:
         if item.status == "active" and item.expires_at < today:
             item.status = "expired"
+            changed = True
+    if changed:
+        db.session.commit()
 
     membership_history = sorted(
         user.membership_history,
@@ -424,6 +433,9 @@ def profile_settings():
         if new_password:
             user.password_hash = generate_password_hash(new_password)
 
+        db.session.add(user)
+        db.session.commit()
+
         flash("تنظیمات پروفایل با موفقیت ذخیره شد.", "success")
         return redirect(url_for("main.profile_settings"))
 
@@ -482,6 +494,7 @@ def user_classes():
 # Wallet API
 # ---------------------------------------------------------------------------
 
+
 @main.route("/api/wallet/deposit", methods=["POST"])
 @login_required
 def api_wallet_deposit():
@@ -508,6 +521,7 @@ def api_wallet_deposit():
 # ---------------------------------------------------------------------------
 # Bookings API
 # ---------------------------------------------------------------------------
+
 
 @main.route("/api/bookings/create", methods=["POST"])
 @login_required
@@ -613,6 +627,7 @@ def api_booking_cancel():
 # Read-only APIs (info)
 # ---------------------------------------------------------------------------
 
+
 @main.route("/api/live-rankings")
 def api_live_rankings():
     try:
@@ -642,6 +657,7 @@ def api_programmes():
 # ---------------------------------------------------------------------------
 # Classes API
 # ---------------------------------------------------------------------------
+
 
 @main.route("/api/classes/enroll", methods=["POST"])
 @login_required
@@ -697,6 +713,7 @@ def api_classes_enroll():
 # ---------------------------------------------------------------------------
 # Events APIs
 # ---------------------------------------------------------------------------
+
 
 @main.route("/api/events/public-register", methods=["POST"])
 def api_events_public_register():
