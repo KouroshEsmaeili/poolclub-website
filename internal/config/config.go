@@ -2,11 +2,15 @@ package config
 
 import "os"
 
-const defaultPort = "8080"
+const (
+	defaultPort        = "8080"
+	defaultDatabaseURL = "poolclub.db"
+)
 
 // Config contains the server configuration.
 type Config struct {
-	Port string
+	Port        string
+	DatabaseURL string
 }
 
 // Load reads configuration from the environment.
@@ -16,5 +20,13 @@ func Load() Config {
 		port = defaultPort
 	}
 
-	return Config{Port: port}
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = defaultDatabaseURL
+	}
+
+	return Config{
+		Port:        port,
+		DatabaseURL: databaseURL,
+	}
 }

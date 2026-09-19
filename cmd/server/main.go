@@ -6,10 +6,26 @@ import (
 	"net/http"
 
 	"github.com/KouroshEsmaeili/poolclub-website/internal/config"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/database"
 )
 
 func main() {
 	cfg := config.Load()
+	db, err := database.Open(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("database startup check failed: %v", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("get database connection: %v", err)
+	}
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("close database: %v", err)
+		}
+	}()
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
