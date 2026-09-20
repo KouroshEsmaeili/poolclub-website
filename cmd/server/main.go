@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KouroshEsmaeili/poolclub-website/internal/auth"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/booking"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/config"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/database"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/httpapi"
@@ -43,8 +44,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("create authentication handler: %v", err)
 	}
-	walletHandler := wallet.NewHandler(wallet.NewService(db), authHandler)
-	handler := httpapi.NewRouter(authHandler, walletHandler)
+	walletService := wallet.NewService(db)
+	walletHandler := wallet.NewHandler(walletService, authHandler)
+	bookingService := booking.NewService(db, walletService, booking.LoadPrices("data/prices.json"))
+	bookingHandler := booking.NewHandler(bookingService, authHandler)
+	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler)
 
 	address := ":" + cfg.Port
 	log.Printf("server listening at http://localhost:%s", cfg.Port)
