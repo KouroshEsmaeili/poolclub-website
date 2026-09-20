@@ -10,6 +10,7 @@ import (
 	"github.com/KouroshEsmaeili/poolclub-website/internal/database"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/httpapi"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/user"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/wallet"
 )
 
 func main() {
@@ -42,7 +43,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("create authentication handler: %v", err)
 	}
-	handler := httpapi.NewRouter(authHandler)
+	walletHandler := wallet.NewHandler(wallet.NewService(db), authHandler)
+	handler := httpapi.NewRouter(authHandler, walletHandler)
 
 	address := ":" + cfg.Port
 	log.Printf("server listening at http://localhost:%s", cfg.Port)

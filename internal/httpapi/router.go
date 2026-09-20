@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/KouroshEsmaeili/poolclub-website/internal/auth"
 )
 
+// RouteRegistrar adds one domain's routes to the application mux.
+type RouteRegistrar interface {
+	RegisterRoutes(*http.ServeMux)
+}
+
 // NewRouter builds the application HTTP handler.
-func NewRouter(authHandler *auth.Handler) http.Handler {
+func NewRouter(registrars ...RouteRegistrar) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
@@ -19,7 +22,9 @@ func NewRouter(authHandler *auth.Handler) http.Handler {
 			log.Printf("write health response: %v", err)
 		}
 	})
-	authHandler.RegisterRoutes(mux)
+	for _, registrar := range registrars {
+		registrar.RegisterRoutes(mux)
+	}
 
 	return mux
 }

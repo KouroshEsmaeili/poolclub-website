@@ -171,23 +171,33 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+// Authenticate returns the user ID for a valid session cookie.
+func (h *Handler) Authenticate(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
+		return 0, false
 	}
 
 	userID, ok := h.sessions.UserID(cookie.Value)
 	if !ok {
 		h.clearSessionCookie(w)
+		return 0, false
+	}
+	return userID, true
+}
+
+func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.Authenticate(w, r)
+	if !ok {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
 	found, err := h.users.FindByID(r.Context(), userID)
 	if errors.Is(err, user.ErrNotFound) {
-		h.sessions.Delete(cookie.Value)
+		if cookie, cookieErr := r.Cookie(sessionCookieName); cookieErr == nil {
+			h.sessions.Delete(cookie.Value)
+		}
 		h.clearSessionCookie(w)
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
