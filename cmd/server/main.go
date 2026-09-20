@@ -1,12 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/KouroshEsmaeili/poolclub-website/internal/auth"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/config"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/database"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/httpapi"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/user"
 )
 
 func main() {
@@ -26,18 +29,24 @@ func main() {
 		}
 	}()
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
-			log.Printf("write health response: %v", err)
-		}
-	})
+	sessionTTL, err := time.ParseDuration(cfg.SessionTTL)
+	if err != nil || sessionTTL <= 0 {
+		log.Fatalf("invalid SESSION_TTL %q", cfg.SessionTTL)
+	}
+	sessions := auth.NewSessionStore(sessionTTL)
+	authHandler, err := auth.NewHandler(
+		user.NewStore(db),
+		sessions,
+		cfg.SessionCookieSecure,
+	)
+	if err != nil {
+		log.Fatalf("create authentication handler: %v", err)
+	}
+	handler := httpapi.NewRouter(authHandler)
 
 	address := ":" + cfg.Port
 	log.Printf("server listening at http://localhost:%s", cfg.Port)
-	if err := http.ListenAndServe(address, mux); err != nil {
+	if err := http.ListenAndServe(address, handler); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }

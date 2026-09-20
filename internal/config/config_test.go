@@ -5,6 +5,8 @@ import "testing"
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("PORT", "")
 	t.Setenv("DATABASE_URL", "")
+	t.Setenv("SESSION_TTL", "")
+	t.Setenv("SESSION_COOKIE_SECURE", "")
 
 	cfg := Load()
 
@@ -13,6 +15,12 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.DatabaseURL != defaultDatabaseURL {
 		t.Fatalf("DatabaseURL = %q, want %q", cfg.DatabaseURL, defaultDatabaseURL)
+	}
+	if cfg.SessionTTL != defaultSessionTTL {
+		t.Fatalf("SessionTTL = %q, want %q", cfg.SessionTTL, defaultSessionTTL)
+	}
+	if cfg.SessionCookieSecure != defaultSessionCookieSecure {
+		t.Fatalf("SessionCookieSecure = %t, want %t", cfg.SessionCookieSecure, defaultSessionCookieSecure)
 	}
 }
 
@@ -35,5 +43,19 @@ func TestLoadCustomDatabaseURL(t *testing.T) {
 
 	if cfg.DatabaseURL != "file:test.db?mode=ro" {
 		t.Fatalf("DatabaseURL = %q, want %q", cfg.DatabaseURL, "file:test.db?mode=ro")
+	}
+}
+
+func TestLoadSessionConfiguration(t *testing.T) {
+	t.Setenv("SESSION_TTL", "48h")
+	t.Setenv("SESSION_COOKIE_SECURE", "true")
+
+	cfg := Load()
+
+	if cfg.SessionTTL != "48h" {
+		t.Fatalf("SessionTTL = %q, want %q", cfg.SessionTTL, "48h")
+	}
+	if !cfg.SessionCookieSecure {
+		t.Fatal("SessionCookieSecure = false, want true")
 	}
 }

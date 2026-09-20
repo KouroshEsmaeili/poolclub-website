@@ -4,6 +4,7 @@ go 1.27.1
 
 require (
 	github.com/ncruces/go-sqlite3/gormlite v0.34.0
+	golang.org/x/crypto v0.57.0
 	gorm.io/gorm v1.31.2
 )
 
