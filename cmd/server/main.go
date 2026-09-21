@@ -12,6 +12,7 @@ import (
 	"github.com/KouroshEsmaeili/poolclub-website/internal/database"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/events"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/httpapi"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/info"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/membership"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/user"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/wallet"
@@ -57,7 +58,8 @@ func main() {
 	classHandler := classes.NewHandler(classService, authHandler)
 	eventService := events.NewService(db, walletService, events.LoadCatalog("data/events.json"))
 	eventHandler := events.NewHandler(eventService, authHandler)
-	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler, membershipHandler, classHandler, eventHandler)
+	infoHandler := info.NewHandler("data/pools.json", "data/programmes.json", info.NewDefaultRankingsClient())
+	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler, membershipHandler, classHandler, eventHandler, infoHandler)
 
 	address := ":" + cfg.Port
 	log.Printf("server listening at http://localhost:%s", cfg.Port)
