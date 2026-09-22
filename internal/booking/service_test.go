@@ -340,6 +340,35 @@ func TestRefreshStatusesExpiresAtStartTime(t *testing.T) {
 	}
 }
 
+func TestBookingsAndNextReservationSupportDashboardReads(t *testing.T) {
+	db, service := bookingTestEnvironment(t)
+	member := createBookingUser(t, db, "dashboard-read@example.com", 0)
+	other := createBookingUser(t, db, "other-dashboard-read@example.com", 0)
+	past := insertBooking(t, db, member.ID, CreateInput{Date: "2030-01-01", Time: "10:00", Duration: 60, Type: TypeFreeSwim}, nil, StatusActive)
+	later := insertBooking(t, db, member.ID, CreateInput{Date: "2030-01-04", Time: "10:00", Duration: 60, Type: TypeFreeSwim}, nil, StatusActive)
+	soon := insertBooking(t, db, member.ID, CreateInput{Date: "2030-01-03", Time: "09:00", Duration: 60, Type: TypeFreeSwim}, nil, StatusActive)
+	insertBooking(t, db, other.ID, CreateInput{Date: "2030-01-02", Time: "09:00", Duration: 60, Type: TypeFreeSwim}, nil, StatusActive)
+
+	items, err := service.Bookings(context.Background(), member.ID)
+	if err != nil {
+		t.Fatalf("Bookings() error = %v", err)
+	}
+	if len(items) != 3 || items[0].ID != later.ID || items[1].ID != soon.ID || items[2].ID != past.ID {
+		t.Fatalf("Bookings() order/ownership = %+v", items)
+	}
+	if items[2].Status != StatusExpired || !service.IsPast(items[2]) || service.IsPast(items[1]) {
+		t.Fatalf("booking status/past derivation = %+v", items)
+	}
+
+	next, err := service.NextReservation(context.Background(), member.ID)
+	if err != nil {
+		t.Fatalf("NextReservation() error = %v", err)
+	}
+	if next == nil || next.ID != soon.ID {
+		t.Fatalf("NextReservation() = %+v, want booking %d", next, soon.ID)
+	}
+}
+
 func bookingTestEnvironment(t *testing.T) (*gorm.DB, *Service) {
 	t.Helper()
 	db, err := database.Open(filepath.Join(t.TempDir(), "booking.db"))

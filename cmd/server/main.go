@@ -16,6 +16,7 @@ import (
 	"github.com/KouroshEsmaeili/poolclub-website/internal/membership"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/user"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/wallet"
+	"github.com/KouroshEsmaeili/poolclub-website/internal/web"
 )
 
 func main() {
@@ -40,8 +41,9 @@ func main() {
 		log.Fatalf("invalid SESSION_TTL %q", cfg.SessionTTL)
 	}
 	sessions := auth.NewSessionStore(sessionTTL)
+	userStore := user.NewStore(db)
 	authHandler, err := auth.NewHandler(
-		user.NewStore(db),
+		userStore,
 		sessions,
 		cfg.SessionCookieSecure,
 	)
@@ -58,8 +60,18 @@ func main() {
 	classHandler := classes.NewHandler(classService, authHandler)
 	eventService := events.NewService(db, walletService, events.LoadCatalog("data/events.json"))
 	eventHandler := events.NewHandler(eventService, authHandler)
-	infoHandler := info.NewHandler("data/pools.json", "data/programmes.json", info.NewDefaultRankingsClient())
-	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler, membershipHandler, classHandler, eventHandler, infoHandler)
+	rankingsClient := info.NewDefaultRankingsClient()
+	infoHandler := info.NewHandler("data/pools.json", "data/programmes.json", rankingsClient)
+	webHandler, err := web.NewHandler(web.Dependencies{
+		Auth: authHandler, Users: userStore, Wallet: walletService,
+		Bookings: bookingService, Memberships: membershipService,
+		Classes: classService, Events: eventService, Rankings: rankingsClient,
+		DataDir: "data", StaticDir: "app/static", CookieSecure: cfg.SessionCookieSecure,
+	})
+	if err != nil {
+		log.Fatalf("create web handler: %v", err)
+	}
+	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler, membershipHandler, classHandler, eventHandler, infoHandler, webHandler)
 
 	address := ":" + cfg.Port
 	log.Printf("server listening at http://localhost:%s", cfg.Port)

@@ -1,0 +1,7 @@
+{{define "title"}}داشبورد | {{.Site.Brand}}{{end}}{{define "content"}}
+<div class="topbar d-flex justify-content-between"><h3>داشبورد</h3><a class="btn btn-success btn-sm" href="/dashboard/wallet">کیف پول: {{.User.WalletBalance}} تومان</a></div>
+<div class="row g-4"><div class="col-md-4"><div class="card h-100 shadow-sm"><div class="card-body"><h5>رزرو بعدی</h5>{{with .NextBooking}}<p>{{.Date}} ساعت {{.Time}}</p><p>{{.Type}}{{with .Lane}} — لاین {{.}}{{end}}</p>{{else}}<p class="text-muted">رزرو فعالی ندارید.</p>{{end}}<a href="/dashboard/bookings">مدیریت رزروها</a></div></div></div>
+<div class="col-md-4"><div class="card h-100 shadow-sm"><div class="card-body"><h5>آمار رزرو</h5><p>پیش رو: {{.UpcomingCount}}</p><p>گذشته: {{.PastCount}}</p><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookingModal">رزرو سانس</button></div></div></div>
+<div class="col-md-4" id="membership-card"><div class="card h-100 shadow-sm"><div class="card-body"><h5>اشتراک</h5>{{if .Current.Active}}<p>{{with .Current.Name}}{{value .}}{{end}}</p><p>اعتبار تا {{date .Current.ExpiresAt}}</p>{{else}}<p class="text-muted">اشتراک فعال ندارید.</p>{{end}}<a href="/dashboard/membership">مدیریت اشتراک</a></div></div></div></div>
+<div class="card shadow-sm mt-4"><div class="card-body"><h5>کلاس‌های من</h5><p>{{len .Enrollments}} ثبت‌نام</p><a href="/dashboard/classes">مشاهده کلاس‌ها</a></div></div>
+{{end}}

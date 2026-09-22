@@ -333,14 +333,13 @@
       items.slice(0, 10).forEach((item, index) => {
         const tr = document.createElement("tr");
         if (index < 3) tr.classList.add("table-warning");
-        tr.innerHTML = `
-          <td>${item.rank}</td>
-          <td>${item.name}</td>
-          <td>${item.club}</td>
-          <td>${item.age_group}</td>
-          <td>${item.stroke}</td>
-          <td class="fw-bold">${item.score}</td>
-        `;
+        [item.rank, item.name, item.club, item.event, item.time, item.score]
+          .forEach((value, cellIndex) => {
+            const td = document.createElement("td");
+            td.textContent = value || "";
+            if (cellIndex === 5) td.classList.add("fw-bold");
+            tr.appendChild(td);
+          });
         tableBody.appendChild(tr);
       });
 

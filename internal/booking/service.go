@@ -200,6 +200,57 @@ func (s *Service) RefreshStatuses(ctx context.Context) (int64, error) {
 	return changed, err
 }
 
+// Bookings returns one user's bookings in the descending date/time order used
+// by the Flask dashboard, after refreshing expired active rows.
+func (s *Service) Bookings(ctx context.Context, userID int64) ([]model.Booking, error) {
+	if _, err := s.RefreshStatuses(ctx); err != nil {
+		return nil, err
+	}
+	bookings := make([]model.Booking, 0)
+	if err := s.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("date DESC").
+		Order("time DESC").
+		Order("id DESC").
+		Find(&bookings).Error; err != nil {
+		return nil, fmt.Errorf("load user bookings: %w", err)
+	}
+	return bookings, nil
+}
+
+// IsPast reports whether a persisted string date/time is before now. Invalid
+// values are treated as past, matching the Flask helper.
+func (s *Service) IsPast(value model.Booking) bool {
+	start, err := parseStart(value.Date, value.Time, s.location)
+	return err != nil || start.Before(s.now())
+}
+
+// NextReservation returns the nearest future active booking, if any.
+func (s *Service) NextReservation(ctx context.Context, userID int64) (*model.Booking, error) {
+	bookings, err := s.Bookings(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	var next *model.Booking
+	var nextStart time.Time
+	for index := range bookings {
+		candidate := &bookings[index]
+		if candidate.Status != StatusActive {
+			continue
+		}
+		start, parseErr := parseStart(candidate.Date, candidate.Time, s.location)
+		if parseErr != nil || !start.After(s.now()) {
+			continue
+		}
+		if next == nil || start.Before(nextStart) {
+			copy := *candidate
+			next = &copy
+			nextStart = start
+		}
+	}
+	return next, nil
+}
+
 func (s *Service) priceFor(bookingType string) int64 {
 	if bookingType == TypeLaneTraining {
 		return s.prices.LaneTraining

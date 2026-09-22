@@ -102,3 +102,28 @@ func (s *Store) UpdatePasswordHash(ctx context.Context, id int64, passwordHash s
 	}
 	return nil
 }
+
+// UpdateProfile replaces the editable browser-profile fields atomically.
+func (s *Store) UpdateProfile(ctx context.Context, id int64, email string, firstName string, lastName string, phone string, birthdate string, emergencyContact string) error {
+	email = NormalizeEmail(email)
+	result := s.db.WithContext(ctx).Model(&model.User{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"email":             email,
+			"first_name":        firstName,
+			"last_name":         lastName,
+			"phone":             phone,
+			"birthdate":         birthdate,
+			"emergency_contact": emergencyContact,
+		})
+	if result.Error != nil {
+		if strings.Contains(strings.ToLower(result.Error.Error()), "unique") {
+			return ErrEmailExists
+		}
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

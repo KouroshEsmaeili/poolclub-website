@@ -201,6 +201,22 @@ func (s *Service) Registrations(ctx context.Context, userID int64) ([]model.Even
 	return registrations, nil
 }
 
+// RegisteredCount returns the active registration count for an event.
+func (s *Service) RegisteredCount(ctx context.Context, eventSlug string) (int64, error) {
+	return countRegistered(ctx, s.db, eventSlug)
+}
+
+// UserIsRegistered reports whether the user has an active registration for an event.
+func (s *Service) UserIsRegistered(ctx context.Context, userID int64, eventSlug string) (bool, error) {
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&model.EventRegistration{}).
+		Where("user_id = ? AND event_slug = ? AND status = ?", userID, eventSlug, StatusRegistered).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("check user event registration: %w", err)
+	}
+	return count > 0, nil
+}
+
 func countRegistered(ctx context.Context, db *gorm.DB, eventSlug string) (int64, error) {
 	var count int64
 	if err := db.WithContext(ctx).Model(&model.EventRegistration{}).

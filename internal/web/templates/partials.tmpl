@@ -1,0 +1,18 @@
+{{define "flash"}}{{with .Flash}}<div class="alert alert-{{.Category}}" role="alert">{{.Text}}</div>{{end}}{{end}}
+{{define "booking-modal"}}
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">رزرو سانس/لاین</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <form id="bookingForm">
+        <div id="bookingMessage" class="alert d-none"></div>
+        <div class="mb-3"><label class="form-label">تاریخ</label><input class="form-control" type="date" id="bookingDate" name="date" required></div>
+        <div class="mb-3"><label class="form-label">ساعت</label><input class="form-control" type="time" id="bookingTime" name="time" required></div>
+        <div class="mb-3"><label class="form-label">مدت</label><select class="form-select" id="bookingDuration" name="duration"><option value="60">۶۰ دقیقه</option><option value="90">۹۰ دقیقه</option><option value="120">۱۲۰ دقیقه</option></select></div>
+        <div class="mb-3"><label class="form-label">نوع</label><select class="form-select" id="bookingType" name="type"><option value="شنای آزاد">شنای آزاد</option><option value="رزرو لاین تمرین">لاین تمرین</option></select></div>
+        <p>هزینه: <strong id="bookingPricePreview">–</strong></p><button class="btn btn-primary w-100" type="submit">بررسی ظرفیت و ثبت رزرو</button>
+      </form>
+    </div>
+  </div></div>
+</div>
+{{end}}

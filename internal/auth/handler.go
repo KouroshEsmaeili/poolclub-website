@@ -62,6 +62,72 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// Registration contains the account fields shared by JSON and browser flows.
+type Registration struct {
+	FirstName string
+	LastName  string
+	Email     string
+	Password  string
+}
+
+// RegisterAccount creates an account using the same hashing and persistence
+// behavior as the JSON registration endpoint.
+func (h *Handler) RegisterAccount(r *http.Request, registration Registration) (*model.User, error) {
+	passwordHash, err := HashPassword(registration.Password)
+	if err != nil {
+		return nil, err
+	}
+	return h.users.Create(
+		r.Context(),
+		user.NormalizeEmail(registration.Email),
+		passwordHash,
+		strings.TrimSpace(registration.FirstName),
+		strings.TrimSpace(registration.LastName),
+	)
+}
+
+// AuthenticateCredentials validates credentials and upgrades a legacy
+// Werkzeug password hash when needed.
+func (h *Handler) AuthenticateCredentials(r *http.Request, email string, password string) (*model.User, error) {
+	found, err := h.users.FindByEmail(r.Context(), email)
+	if errors.Is(err, user.ErrNotFound) {
+		VerifyPassword(h.dummyHash, password)
+		return nil, user.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	valid, needsRehash := VerifyPassword(found.PasswordHash, password)
+	if !valid {
+		return nil, user.ErrNotFound
+	}
+	if needsRehash {
+		passwordHash, hashErr := HashPassword(password)
+		if hashErr != nil {
+			return nil, hashErr
+		}
+		if err := h.users.UpdatePasswordHash(r.Context(), found.ID, passwordHash); err != nil {
+			return nil, err
+		}
+		found.PasswordHash = passwordHash
+	}
+	return found, nil
+}
+
+// StartSession installs a new secure browser session for a user.
+func (h *Handler) StartSession(w http.ResponseWriter, r *http.Request, userID int64) error {
+	return h.startSession(w, r, userID)
+}
+
+// EndSession invalidates the current session and expires its cookie.
+func (h *Handler) EndSession(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		h.sessions.Delete(cookie.Value)
+	}
+	h.clearSessionCookie(w)
+}
+
 type userResponse struct {
 	ID        int64  `json:"id"`
 	Email     string `json:"email"`
@@ -89,23 +155,16 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := HashPassword(request.Password)
+	created, err := h.RegisterAccount(r, Registration{
+		FirstName: request.FirstName,
+		LastName:  request.LastName,
+		Email:     request.Email,
+		Password:  request.Password,
+	})
 	if errors.Is(err, bcrypt.ErrPasswordTooLong) {
 		writeError(w, http.StatusBadRequest, "password is too long")
 		return
 	}
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "could not create account")
-		return
-	}
-
-	created, err := h.users.Create(
-		r.Context(),
-		request.Email,
-		passwordHash,
-		request.FirstName,
-		request.LastName,
-	)
 	if errors.Is(err, user.ErrEmailExists) {
 		writeError(w, http.StatusConflict, "email is already registered")
 		return
@@ -130,29 +189,14 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request.Email = user.NormalizeEmail(request.Email)
-	found, err := h.users.FindByEmail(r.Context(), request.Email)
+	found, err := h.AuthenticateCredentials(r, request.Email, request.Password)
 	if errors.Is(err, user.ErrNotFound) {
-		VerifyPassword(h.dummyHash, request.Password)
 		writeError(w, http.StatusUnauthorized, "invalid email or password")
 		return
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not log in")
 		return
-	}
-
-	valid, needsRehash := VerifyPassword(found.PasswordHash, request.Password)
-	if !valid {
-		writeError(w, http.StatusUnauthorized, "invalid email or password")
-		return
-	}
-	if needsRehash {
-		passwordHash, err := HashPassword(request.Password)
-		if err != nil || h.users.UpdatePasswordHash(r.Context(), found.ID, passwordHash) != nil {
-			writeError(w, http.StatusInternalServerError, "could not log in")
-			return
-		}
 	}
 
 	if err := h.startSession(w, r, found.ID); err != nil {
@@ -164,10 +208,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
-	if cookie, err := r.Cookie(sessionCookieName); err == nil {
-		h.sessions.Delete(cookie.Value)
-	}
-	h.clearSessionCookie(w)
+	h.EndSession(w, r)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
