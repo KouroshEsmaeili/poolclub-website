@@ -1,5 +1,7 @@
 # Pool Club Website
 
+[![CI](https://github.com/KouroshEsmaeili/poolclub-website/actions/workflows/ci.yml/badge.svg)](https://github.com/KouroshEsmaeili/poolclub-website/actions/workflows/ci.yml)
+
 A Go web application for managing a fictional swimming club. It includes server-rendered pages, authentication, wallet operations, bookings, memberships, classes, event registration, and live ranking data.
 
 The repository is self-contained for local development: tracked demo configuration lives in `data/`, database schema changes live in `migrations/`, and the UI is rendered with Go `html/template` templates.
@@ -85,7 +87,15 @@ go test ./... -count=1
 git diff --check
 ```
 
-The tests cover domain behavior, HTTP APIs, browser flows, migration idempotency, schema compatibility, and fresh-clone startup using temporary databases.
+The tests cover domain behavior, HTTP APIs, browser flows, migration idempotency, schema compatibility, and fresh-clone startup using temporary databases. GitHub Actions runs formatting, module, vet, whitespace, and test checks on both Linux and Windows.
+
+## Runtime and security
+
+- The HTTP server uses explicit read, write, header, and idle timeouts and shuts down gracefully on interrupt/termination signals.
+- Session cookies are HTTP-only, use `SameSite=Lax`, and can be marked `Secure` with `SESSION_COOKIE_SECURE=true`.
+- Unsafe browser requests are protected by same-origin checks using Fetch Metadata plus `Origin`/`Referer` validation, while non-browser API clients remain supported.
+- Browser logout is POST-only.
+- Expired in-memory sessions and flash messages are pruned during normal store activity.
 
 ## Notes
 

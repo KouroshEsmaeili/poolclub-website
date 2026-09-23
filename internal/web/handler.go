@@ -115,7 +115,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /auth/login", h.loginPage)
 	mux.HandleFunc("GET /auth/register", h.registerPage)
 	mux.HandleFunc("POST /auth/register", h.registerPage)
-	mux.HandleFunc("GET /auth/logout", h.logout)
+	mux.HandleFunc("POST /auth/logout", h.logout)
 	mux.HandleFunc("GET /dashboard", h.dashboard)
 	mux.HandleFunc("GET /dashboard/wallet", h.walletPage)
 	mux.HandleFunc("GET /dashboard/membership", h.membershipPage)
@@ -333,7 +333,7 @@ func (h *Handler) registerPage(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.auth.Authenticate(w, r); !ok {
-		http.Redirect(w, r, "/auth/login?next=%2Fauth%2Flogout", http.StatusFound)
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
 		return
 	}
 	h.auth.EndSession(w, r)

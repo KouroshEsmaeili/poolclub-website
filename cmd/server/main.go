@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/KouroshEsmaeili/poolclub-website/internal/auth"
@@ -17,6 +22,14 @@ import (
 	"github.com/KouroshEsmaeili/poolclub-website/internal/user"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/wallet"
 	"github.com/KouroshEsmaeili/poolclub-website/internal/web"
+)
+
+const (
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 15 * time.Second
+	writeTimeout      = 30 * time.Second
+	idleTimeout       = 60 * time.Second
+	shutdownTimeout   = 10 * time.Second
 )
 
 func main() {
@@ -73,9 +86,32 @@ func main() {
 	}
 	handler := httpapi.NewRouter(authHandler, walletHandler, bookingHandler, membershipHandler, classHandler, eventHandler, infoHandler, webHandler)
 
-	address := ":" + cfg.Port
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           handler,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+	}
+
+	signalContext, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		<-signalContext.Done()
+		shutdownContext, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		log.Print("server shutdown requested")
+		if err := server.Shutdown(shutdownContext); err != nil {
+			log.Printf("graceful shutdown failed: %v", err)
+			if closeErr := server.Close(); closeErr != nil {
+				log.Printf("force server close failed: %v", closeErr)
+			}
+		}
+	}()
+
 	log.Printf("server listening at http://localhost:%s", cfg.Port)
-	if err := http.ListenAndServe(address, handler); err != nil {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("server failed: %v", err)
 	}
 }

@@ -13,7 +13,7 @@
   <div class="collapse navbar-collapse" id="navbarResponsive"><ul class="navbar-nav ms-auto">
     <li class="nav-item"><a class="nav-link" href="/#about">ساعت کاری و قوانین</a></li><li class="nav-item"><a class="nav-link" href="/#classes">کلاس‌ها</a></li>
     <li class="nav-item"><a class="nav-link" href="/#events">رویدادها</a></li><li class="nav-item"><a class="nav-link" href="/#live-rankings">رده‌بندی شناگران</a></li>
-  </ul>{{if .User}}<a class="btn btn-outline-light ms-3" href="/dashboard">{{with .User.FirstName}}{{value .}}{{else}}حساب کاربری{{end}}</a><a class="btn btn-link text-white" href="/auth/logout">خروج</a>{{else}}<a class="btn btn-outline-light ms-3" href="/auth/login">ورود / ثبت‌نام</a>{{end}}</div>
+  </ul>{{if .User}}<a class="btn btn-outline-light ms-3" href="/dashboard">{{with .User.FirstName}}{{value .}}{{else}}حساب کاربری{{end}}</a><form class="d-inline" method="post" action="/auth/logout"><button class="btn btn-link text-white" type="submit">خروج</button></form>{{else}}<a class="btn btn-outline-light ms-3" href="/auth/login">ورود / ثبت‌نام</a>{{end}}</div>
 </div></nav>
 {{template "content" .}}
 <footer class="footer bg-black small text-center text-white-50"><div class="container py-4">© {{.Site.Brand}}{{if .Site.City}} — {{.Site.City}}{{end}}</div></footer>

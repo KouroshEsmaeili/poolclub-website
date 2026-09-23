@@ -6,7 +6,7 @@
 <a class="{{if eq .Active "dashboard"}}active{{end}}" href="/dashboard">داشبورد</a><a class="{{if eq .Active "bookings"}}active{{end}}" href="/dashboard/bookings">رزروهای من</a>
 <a class="{{if eq .Active "events"}}active{{end}}" href="/dashboard/events">رویدادها</a><a class="{{if eq .Active "membership"}}active{{end}}" href="/dashboard/membership">اشتراک من</a>
 <a class="{{if eq .Active "classes"}}active{{end}}" href="/dashboard/classes">کلاس‌های من</a><a class="{{if eq .Active "wallet"}}active{{end}}" href="/dashboard/wallet">کیف پول</a>
-<a class="{{if eq .Active "profile"}}active{{end}}" href="/dashboard/profile">تنظیمات پروفایل</a><hr class="border-secondary"><a href="/auth/logout">خروج</a></nav>
+<a class="{{if eq .Active "profile"}}active{{end}}" href="/dashboard/profile">تنظیمات پروفایل</a><hr class="border-secondary"><form method="post" action="/auth/logout"><button class="btn btn-link text-danger text-decoration-none px-2" type="submit">خروج</button></form></nav>
 <main class="content">{{template "flash" .}}{{template "content" .}}</main>{{template "booking-modal" .}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script src="/static/js/app.js"></script>{{template "scripts" .}}</body></html>{{end}}
 {{define "scripts"}}{{end}}

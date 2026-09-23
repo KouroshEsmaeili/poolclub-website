@@ -86,7 +86,7 @@ func TestBrowserRegistrationDashboardLogoutFlow(t *testing.T) {
 		t.Fatal("dashboard did not HTML-escape the user's name")
 	}
 
-	loggedOut := performRequest(environment.handler, http.MethodGet, "/auth/logout", "", sessionCookie)
+	loggedOut := performRequest(environment.handler, http.MethodPost, "/auth/logout", "", sessionCookie)
 	if loggedOut.Code != http.StatusFound || loggedOut.Header().Get("Location") != "/" {
 		t.Fatalf("logout = %d %q", loggedOut.Code, loggedOut.Header().Get("Location"))
 	}

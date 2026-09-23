@@ -37,9 +37,11 @@ func (s *SessionStore) Create(userID int64) (string, time.Time, error) {
 	}
 
 	id := base64.RawURLEncoding.EncodeToString(random)
-	expiresAt := s.now().Add(s.ttl)
+	now := s.now()
+	expiresAt := now.Add(s.ttl)
 
 	s.mu.Lock()
+	s.pruneExpiredLocked(now)
 	s.sessions[id] = session{userID: userID, expiresAt: expiresAt}
 	s.mu.Unlock()
 
@@ -52,6 +54,7 @@ func (s *SessionStore) UserID(id string) (int64, bool) {
 		return 0, false
 	}
 
+	now := s.now()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -59,7 +62,7 @@ func (s *SessionStore) UserID(id string) (int64, bool) {
 	if !ok {
 		return 0, false
 	}
-	if !stored.expiresAt.After(s.now()) {
+	if !stored.expiresAt.After(now) {
 		delete(s.sessions, id)
 		return 0, false
 	}
@@ -72,4 +75,12 @@ func (s *SessionStore) Delete(id string) {
 	s.mu.Lock()
 	delete(s.sessions, id)
 	s.mu.Unlock()
+}
+
+func (s *SessionStore) pruneExpiredLocked(now time.Time) {
+	for id, stored := range s.sessions {
+		if !stored.expiresAt.After(now) {
+			delete(s.sessions, id)
+		}
+	}
 }
