@@ -1,0 +1,16 @@
+{
+  "categories": [
+    {
+      "key": "demo-wellness",
+      "title": "تندرستی",
+      "items": [
+        {
+          "slug": "demo-recovery",
+          "name": "بازیابی پس از تمرین",
+          "description": "یک برنامه نمونه برای سرد کردن و کشش پس از شنا.",
+          "suitable_for": "بزرگسالان"
+        }
+      ]
+    }
+  ]
+}

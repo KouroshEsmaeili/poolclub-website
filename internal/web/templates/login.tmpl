@@ -1,0 +1,4 @@
+{{define "title"}}ورود | {{.Site.Brand}}{{end}}{{define "content"}}<div class="row justify-content-center"><div class="col-lg-5"><div class="card auth-card shadow-lg"><div class="card-body p-4">
+<h4 class="text-center">ورود به حساب کاربری</h4><p class="text-muted text-center">برای مشاهده داشبورد، رزروها و اشتراک‌ها وارد شوید.</p>{{template "flash" .}}
+<form method="post"><input type="hidden" name="next" value="{{.Next}}"><div class="mb-3"><label class="form-label">ایمیل</label><input class="form-control" type="email" name="email" required></div><div class="mb-3"><label class="form-label">رمز عبور</label><input class="form-control" type="password" name="password" required></div><button class="btn btn-primary w-100">ورود</button></form>
+<hr><p class="text-center">حساب ندارید؟ <a href="/auth/register">ثبت‌نام کنید</a>.</p></div></div></div></div>{{end}}

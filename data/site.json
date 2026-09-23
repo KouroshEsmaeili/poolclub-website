@@ -1,0 +1,16 @@
+{
+  "brand": "باشگاه شنای موج آبی",
+  "tagline": "یک نمونه نمایشی برای شنا، آموزش و تندرستی",
+  "city": "شهر نمونه",
+  "address": "خیابان ورزش، مجموعه نمایشی موج آبی",
+  "email": "hello@bluewave.example",
+  "phone": "۰۲۱-۰۰۰۰۰۰۰۰",
+  "map": {
+    "embed_url": ""
+  },
+  "social": {
+    "instagram": "https://example.invalid/bluewave/instagram",
+    "telegram": "https://example.invalid/bluewave/telegram",
+    "github": "https://example.invalid/bluewave/source"
+  }
+}

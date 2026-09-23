@@ -1,0 +1,23 @@
+{
+  "categories": [
+    {
+      "key": "demo-learning",
+      "title": "آموزش شنا",
+      "items": [
+        {
+          "slug": "demo-beginner-swim",
+          "name": "شنای مقدماتی",
+          "coach": "مربی نمونه",
+          "time": "شنبه‌ها، ساعت ۱۷:۰۰",
+          "capacity": 12,
+          "price": "۱۲۰٬۰۰۰ تومان",
+          "price_amount": 120000,
+          "description": "دوره نمایشی آشنایی با تنفس و حرکت‌های پایه.",
+          "tags": [
+            "مقدماتی"
+          ]
+        }
+      ]
+    }
+  ]
+}
