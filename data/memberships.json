@@ -1,0 +1,14 @@
+{
+  "plans": [
+    {
+      "slug": "demo-monthly",
+      "name": "اشتراک یک‌ماهه نمایشی",
+      "duration_days": 30,
+      "price": 300000,
+      "tag": "نمونه",
+      "badge_class": "bg-primary",
+      "description": "اشتراک ساده برای آزمایش گردش‌کار خرید.",
+      "description_long": "این طرح و همه مبالغ آن صرفاً داده نمایشی هستند."
+    }
+  ]
+}

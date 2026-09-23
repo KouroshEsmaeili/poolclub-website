@@ -205,9 +205,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-/data
-*/static/assets/img
 /node_modules
-/app/static/css/styles.src.css
-/migrations
 *.db
