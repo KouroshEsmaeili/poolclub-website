@@ -10,7 +10,7 @@ import (
 
 var ErrJSONUnavailable = errors.New("JSON data unavailable")
 
-// loadJSONFile reads and validates one Flask data file without transforming
+// loadJSONFile reads and validates one data file without transforming
 // its JSON shape or array order.
 func loadJSONFile(path string) (json.RawMessage, error) {
 	contents, err := os.ReadFile(path)

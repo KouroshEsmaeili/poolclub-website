@@ -72,7 +72,7 @@ func TestLocalJSONEndpointsReturnSafeErrorsForMissingAndInvalidData(t *testing.T
 	}
 }
 
-func TestLiveRankingsResponseUsesIntendedFlaskAPIStructureAndScraperFields(t *testing.T) {
+func TestLiveRankingsResponseUsesAPIStructureAndScraperFields(t *testing.T) {
 	directory := t.TempDir()
 	poolsPath := filepath.Join(directory, "pools.json")
 	programmesPath := filepath.Join(directory, "programmes.json")

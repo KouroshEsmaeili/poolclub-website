@@ -52,7 +52,7 @@ func TestPurchaseWithoutMembershipChargesExactlyAndCreatesHistory(t *testing.T) 
 	}
 }
 
-func TestPurchaseExpiryRulesMatchFlask(t *testing.T) {
+func TestPurchaseExpiryRulesMatchLegacyBehavior(t *testing.T) {
 	t.Run("active same plan extends from current expiry", func(t *testing.T) {
 		db, service := membershipTestEnvironment(t)
 		member := createMembershipUser(t, db, "extend@example.com", 100000)

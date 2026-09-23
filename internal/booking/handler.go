@@ -18,7 +18,7 @@ type Authenticator interface {
 	Authenticate(http.ResponseWriter, *http.Request) (int64, bool)
 }
 
-// Handler serves the Flask-compatible booking endpoints.
+// Handler serves the booking API endpoints.
 type Handler struct {
 	service       *Service
 	authenticator Authenticator

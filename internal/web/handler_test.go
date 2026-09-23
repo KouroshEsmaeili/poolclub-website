@@ -209,7 +209,7 @@ func TestRepositoryDemoDataFreshCloneSetup(t *testing.T) {
 		Auth: authHandler, Users: userStore, Wallet: walletService, Bookings: bookingService,
 		Memberships: membershipService, Classes: classService, Events: eventService,
 		Rankings: fixedRankings{result: sampleRankings()}, DataDir: dataDir,
-		StaticDir: filepath.Join(repositoryRoot, "app", "static"),
+		StaticDir: filepath.Join(repositoryRoot, "static"),
 	})
 	if err != nil {
 		t.Fatalf("create web handler: %v", err)
@@ -313,7 +313,7 @@ func newWebEnvironment(t *testing.T, rankings info.RankingsFetcher) webEnvironme
 	webHandler, err := NewHandler(Dependencies{
 		Auth: authHandler, Users: userStore, Wallet: walletService, Bookings: bookingService,
 		Memberships: membershipService, Classes: classService, Events: eventService,
-		Rankings: rankings, DataDir: dataDir, StaticDir: filepath.Join("..", "..", "app", "static"),
+		Rankings: rankings, DataDir: dataDir, StaticDir: filepath.Join("..", "..", "static"),
 	})
 	if err != nil {
 		t.Fatalf("create web handler: %v", err)
@@ -328,7 +328,7 @@ func assertLocalStaticReferencesExist(t *testing.T, repositoryRoot string, rende
 	t.Helper()
 	pattern := regexp.MustCompile(`(?:src|href)="/static/([^"]+)"`)
 	for _, match := range pattern.FindAllStringSubmatch(rendered, -1) {
-		path := filepath.Join(repositoryRoot, "app", "static", filepath.FromSlash(match[1]))
+		path := filepath.Join(repositoryRoot, "static", filepath.FromSlash(match[1]))
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("rendered local static reference %q is unavailable: %v", match[0], err)
 		}

@@ -70,7 +70,7 @@ func (s *Service) EnrollWithDB(ctx context.Context, db *gorm.DB, userID int64, c
 		return EnrollResult{}, ErrInvalidPrice
 	}
 
-	// Flask permits duplicate enrollments and displays, but does not enforce,
+	// The established behavior permits duplicate enrollments and displays, but does not enforce,
 	// configured capacity. Keeping both behaviors is intentional for parity.
 	description := fmt.Sprintf("ثبت‌نام در کلاس: %s", class.Name)
 	newBalance, err := s.wallet.ChargeWithDB(ctx, db, userID, class.PriceAmount, description)
@@ -100,7 +100,7 @@ func (s *Service) EnrollWithDB(ctx context.Context, db *gorm.DB, userID int64, c
 }
 
 // Enrollments returns the user's complete enrollment history in deterministic
-// oldest-first order, matching the Flask page's effective insertion order.
+// oldest-first order, matching the dashboard insertion order.
 func (s *Service) Enrollments(ctx context.Context, userID int64) ([]model.ClassEnrollment, error) {
 	if err := ensureUserExists(ctx, s.db, userID); err != nil {
 		return nil, err

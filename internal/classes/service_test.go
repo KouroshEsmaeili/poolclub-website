@@ -16,7 +16,7 @@ import (
 
 var classNow = time.Date(2030, time.January, 2, 10, 30, 0, 0, time.Local)
 
-func TestEnrollPersistsFlaskFieldsAndChargesWalletExactly(t *testing.T) {
+func TestEnrollPersistsFieldsAndChargesWalletExactly(t *testing.T) {
 	db, service := classTestEnvironment(t)
 	member := createClassUser(t, db, "success@example.com", 100000)
 
@@ -108,7 +108,7 @@ func TestConfiguredCapacityIsDisplayOnlyAndNotEnforced(t *testing.T) {
 		t.Fatalf("count class enrollments: %v", err)
 	}
 	if count != 2 {
-		t.Fatalf("capacity-1 class enrollment count = %d, want 2 for Flask parity", count)
+		t.Fatalf("capacity-1 class enrollment count = %d, want 2 for established duplicate-enrollment behavior", count)
 	}
 }
 

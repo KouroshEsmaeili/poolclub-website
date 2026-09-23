@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -93,7 +92,7 @@ func NewHandler(dependencies Dependencies) (*Handler, error) {
 		dependencies.DataDir = "data"
 	}
 	if dependencies.StaticDir == "" {
-		dependencies.StaticDir = filepath.Join("app", "static")
+		dependencies.StaticDir = "static"
 	}
 
 	h := &Handler{

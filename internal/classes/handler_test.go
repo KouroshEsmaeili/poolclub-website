@@ -26,7 +26,7 @@ func TestClassEnrollmentEndpointRequiresAuthentication(t *testing.T) {
 	}
 }
 
-func TestClassEnrollmentManualFlowMatchesFrontendAndFlask(t *testing.T) {
+func TestClassEnrollmentManualFlowMatchesFrontendContract(t *testing.T) {
 	db, server := classHTTPEnvironment(t, classTestCatalog())
 	client := classClient(t, server)
 	registerClassUser(t, client, server.URL, "class-http@example.com")

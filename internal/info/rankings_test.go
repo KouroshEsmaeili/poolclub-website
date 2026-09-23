@@ -102,7 +102,7 @@ func TestRankingsParserHandlesMissingOrMalformedExpectedMarkup(t *testing.T) {
 	}
 }
 
-func TestRankingsClientLimitsRowsLikeFlask(t *testing.T) {
+func TestRankingsClientLimitsRowsPerGroup(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(rankingFixture))
 	}))

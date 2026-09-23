@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestLoadCatalogKeepsPublishedEventsAndParsesFlaskFields(t *testing.T) {
+func TestLoadCatalogKeepsPublishedEventsAndParsesConfiguredFields(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.json")
 	contents := append([]byte{0xef, 0xbb, 0xbf}, []byte(`[
 		{"slug":"paid","title":"مسابقه","status":"published","state":"open","price":"150,000 تومان","capacity":"۲"},
@@ -72,7 +72,7 @@ func TestLoadCatalogHasNoFallbackForMissingOrMalformedFile(t *testing.T) {
 	}
 }
 
-func TestCatalogMatchesFlaskFirstPublishedSlugAndInvalidCapacity(t *testing.T) {
+func TestCatalogUsesFirstPublishedSlugAndHandlesInvalidCapacity(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "events.json")
 	contents := []byte(`[
 		{"slug":"same","title":"draft first","status":"draft","state":"open","price":"1","capacity":1},

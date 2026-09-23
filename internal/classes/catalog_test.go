@@ -89,7 +89,7 @@ func TestMalformedCatalogNumbersRemainInvalidWithoutDefaults(t *testing.T) {
 	}
 }
 
-func TestCatalogLookupUsesFirstMatchingSlugLikeFlask(t *testing.T) {
+func TestCatalogLookupUsesFirstMatchingSlug(t *testing.T) {
 	firstCoach := "first"
 	secondCoach := "second"
 	catalog := NewCatalog([]Definition{

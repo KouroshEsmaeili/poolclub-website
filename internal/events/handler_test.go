@@ -27,7 +27,7 @@ func TestAuthenticatedEventEndpointRequiresAuthentication(t *testing.T) {
 	}
 }
 
-func TestEventRegistrationManualFlowMatchesFrontendAndFlask(t *testing.T) {
+func TestEventRegistrationManualFlowMatchesFrontendContract(t *testing.T) {
 	db, server := eventHTTPEnvironment(t, eventHandlerCatalog())
 	guestClient := server.Client()
 

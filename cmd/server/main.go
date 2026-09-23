@@ -66,7 +66,7 @@ func main() {
 		Auth: authHandler, Users: userStore, Wallet: walletService,
 		Bookings: bookingService, Memberships: membershipService,
 		Classes: classService, Events: eventService, Rankings: rankingsClient,
-		DataDir: "data", StaticDir: "app/static", CookieSecure: cfg.SessionCookieSecure,
+		DataDir: "data", StaticDir: "static", CookieSecure: cfg.SessionCookieSecure,
 	})
 	if err != nil {
 		log.Fatalf("create web handler: %v", err)

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// ErrPlansUnavailable means the Flask membership configuration could not be loaded.
+// ErrPlansUnavailable means the membership configuration could not be loaded.
 var ErrPlansUnavailable = errors.New("membership plans unavailable")
 
 // Plan is one purchasable membership plan from data/memberships.json.
@@ -35,7 +35,7 @@ func NewCatalog(plans []Plan) Catalog {
 	return Catalog{plans: append([]Plan(nil), plans...)}
 }
 
-// LoadPlans reads the same membership plan file used by Flask. Flask has no
+// LoadPlans reads the membership plan file. The application has no
 // fallback plans, so a missing or invalid file remains an explicit error.
 func LoadPlans(path string) Catalog {
 	contents, err := os.ReadFile(path)

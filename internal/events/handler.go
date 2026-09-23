@@ -15,7 +15,7 @@ type Authenticator interface {
 	Authenticate(http.ResponseWriter, *http.Request) (int64, bool)
 }
 
-// Handler serves the Flask-compatible event registration endpoints.
+// Handler serves the event registration API endpoints.
 type Handler struct {
 	service       *Service
 	authenticator Authenticator

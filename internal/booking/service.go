@@ -201,7 +201,7 @@ func (s *Service) RefreshStatuses(ctx context.Context) (int64, error) {
 }
 
 // Bookings returns one user's bookings in the descending date/time order used
-// by the Flask dashboard, after refreshing expired active rows.
+// by the dashboard, after refreshing expired active rows.
 func (s *Service) Bookings(ctx context.Context, userID int64) ([]model.Booking, error) {
 	if _, err := s.RefreshStatuses(ctx); err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (s *Service) Bookings(ctx context.Context, userID int64) ([]model.Booking, 
 }
 
 // IsPast reports whether a persisted string date/time is before now. Invalid
-// values are treated as past, matching the Flask helper.
+// values are treated as past, matching the established booking behavior.
 func (s *Service) IsPast(value model.Booking) bool {
 	start, err := parseStart(value.Date, value.Time, s.location)
 	return err != nil || start.Before(s.now())

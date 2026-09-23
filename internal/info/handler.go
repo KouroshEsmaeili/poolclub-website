@@ -11,7 +11,7 @@ type RankingsFetcher interface {
 	Fetch(context.Context) (Rankings, error)
 }
 
-// Handler serves the remaining Flask read-only JSON APIs.
+// Handler serves the read-only information APIs.
 type Handler struct {
 	poolsPath      string
 	programmesPath string
@@ -55,7 +55,7 @@ func (h *Handler) liveRankings(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "خطا در دریافت رده‌بندی زنده.")
 		return
 	}
-	// The Flask route promises one "items" array, while the current scraper
+	// The API exposes one "items" array, while the scraper
 	// returns separate men and women lists. Flattening them in scraper order
 	// repairs the route's tuple-unpacking bug without inventing a new API shape.
 	items := make([]Ranking, 0, len(rankings.Men)+len(rankings.Women))

@@ -15,7 +15,7 @@ type Authenticator interface {
 	Authenticate(http.ResponseWriter, *http.Request) (int64, bool)
 }
 
-// Handler serves the Flask-compatible class enrollment endpoint.
+// Handler serves the class enrollment API endpoint.
 type Handler struct {
 	service       *Service
 	authenticator Authenticator

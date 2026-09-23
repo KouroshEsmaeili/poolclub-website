@@ -49,7 +49,7 @@ func (s *Service) Events() ([]Definition, error) {
 	return s.catalog.Events()
 }
 
-// PublicRegister creates the Flask public/guest registration. Public
+// PublicRegister creates the public/guest registration. Public
 // registration intentionally does not enforce state, capacity, or duplicates
 // and never charges a wallet.
 func (s *Service) PublicRegister(ctx context.Context, userID *int64, eventSlug string, name string, email string) (model.EventRegistration, error) {

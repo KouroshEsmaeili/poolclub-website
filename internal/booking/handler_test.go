@@ -68,7 +68,7 @@ func TestBookingCreateEndpointMatchesFrontendPayload(t *testing.T) {
 	}
 }
 
-func TestBookingCreateEndpointErrorsMatchFlaskContract(t *testing.T) {
+func TestBookingCreateEndpointErrorsMatchAPIContract(t *testing.T) {
 	_, service := bookingTestEnvironment(t)
 	db := service.db
 	authHandler, err := auth.NewHandler(user.NewStore(db), auth.NewSessionStore(time.Hour), false)

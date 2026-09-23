@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// ErrCatalogUnavailable means the Flask event configuration could not be loaded.
+// ErrCatalogUnavailable means the event configuration could not be loaded.
 var ErrCatalogUnavailable = errors.New("event catalog unavailable")
 
 // Definition contains the registration fields from one published event.
@@ -33,8 +33,8 @@ func NewCatalog(events []Definition) Catalog {
 	return Catalog{events: cloneDefinitions(events)}
 }
 
-// LoadCatalog reads the same event file used by Flask. Only events whose
-// status is exactly "published" are available through the Flask APIs.
+// LoadCatalog reads the event catalogue. Only events whose
+// status is exactly "published" are available through the APIs.
 func LoadCatalog(path string) Catalog {
 	contents, err := os.ReadFile(path)
 	if err != nil {
@@ -92,7 +92,7 @@ type rawDefinition struct {
 	Capacity json.RawMessage `json:"capacity"`
 }
 
-// parseDisplayedPrice matches Flask's digits-only parser. Invalid or absent
+// parseDisplayedPrice uses the established digits-only parser. Invalid or absent
 // prices become zero and therefore represent free authenticated registration.
 func parseDisplayedPrice(raw json.RawMessage) int64 {
 	if len(raw) == 0 || strings.TrimSpace(string(raw)) == "null" {
@@ -126,7 +126,7 @@ func parseDisplayedPrice(raw json.RawMessage) int64 {
 	return price
 }
 
-// parseCapacity matches Flask's best-effort int conversion. Invalid, absent,
+// parseCapacity uses best-effort integer conversion. Invalid, absent,
 // or null values disable capacity enforcement; zero and negative values remain
 // configured capacities and therefore make the event immediately full.
 func parseCapacity(raw json.RawMessage) *int64 {

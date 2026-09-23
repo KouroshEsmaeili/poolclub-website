@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// ErrCatalogUnavailable means the Flask class configuration could not be loaded.
+// ErrCatalogUnavailable means the class configuration could not be loaded.
 var ErrCatalogUnavailable = errors.New("class catalog unavailable")
 
 // Definition contains the authoritative enrollment fields from data/classes.json.
@@ -33,7 +33,7 @@ func NewCatalog(classes []Definition) Catalog {
 	return Catalog{classes: cloneDefinitions(classes)}
 }
 
-// LoadCatalog reads the same class file used by Flask. Flask has no fallback
+// LoadCatalog reads the class catalogue. The application has no fallback
 // classes, so a missing or invalid file remains an explicit error.
 func LoadCatalog(path string) Catalog {
 	contents, err := os.ReadFile(path)

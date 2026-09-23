@@ -19,7 +19,7 @@ type User struct {
 	EmergencyContact    *string    `gorm:"column:emergency_contact;type:varchar(255);default:''"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (User) TableName() string {
 	return "users"
 }
@@ -35,7 +35,7 @@ type WalletTransaction struct {
 	User        *User     `gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (WalletTransaction) TableName() string {
 	return "wallet_transactions"
 }
@@ -53,7 +53,7 @@ type MembershipHistoryItem struct {
 	User        *User     `gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (MembershipHistoryItem) TableName() string {
 	return "membership_history"
 }
@@ -72,7 +72,7 @@ type ClassEnrollment struct {
 	User       *User     `gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (ClassEnrollment) TableName() string {
 	return "class_enrollments"
 }
@@ -90,7 +90,7 @@ type Booking struct {
 	User     *User  `gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (Booking) TableName() string {
 	return "bookings"
 }
@@ -109,7 +109,7 @@ type EventRegistration struct {
 	User      *User     `gorm:"foreignKey:UserID;references:ID"`
 }
 
-// TableName returns the existing Flask table name.
+// TableName returns the persisted schema table name.
 func (EventRegistration) TableName() string {
 	return "event_registrations"
 }

@@ -35,7 +35,7 @@ type Ranking struct {
 	Score string `json:"score"`
 }
 
-// Rankings contains the gender-separated scraper result used by Flask.
+// Rankings contains the gender-separated scraper result.
 type Rankings struct {
 	Men       []Ranking
 	Women     []Ranking
@@ -65,8 +65,8 @@ func NewRankingsClient(httpClient HTTPDoer, baseURL string) *RankingsClient {
 	}
 }
 
-// NewDefaultRankingsClient creates the production client. Flask already uses
-// a ten-second request timeout; the Go port keeps that explicit bound.
+// NewDefaultRankingsClient creates the production client and keeps
+// an explicit ten-second request timeout.
 func NewDefaultRankingsClient() *RankingsClient {
 	return NewRankingsClient(&http.Client{Timeout: 10 * time.Second}, defaultSwimCloudURL)
 }
@@ -112,11 +112,11 @@ func (c *RankingsClient) Fetch(ctx context.Context) (Rankings, error) {
 	return Rankings{
 		Men:       men,
 		Women:     women,
-		UpdatedAt: pythonISOTime(c.now()),
+		UpdatedAt: isoTimestamp(c.now()),
 	}, nil
 }
 
-func pythonISOTime(value time.Time) string {
+func isoTimestamp(value time.Time) string {
 	return value.UTC().Format("2006-01-02T15:04:05.999999-07:00")
 }
 

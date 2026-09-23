@@ -28,7 +28,7 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-// NormalizeEmail matches the Flask application's email normalization.
+// NormalizeEmail applies the application email-normalization rule.
 func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
